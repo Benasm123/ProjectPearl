@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/external
+*.vcxproj
+*.DotSettings
+*.filters
+/ProjectPearl/ProjectPearl.vcxproj
+/ProjectPearl/ProjectPearl.vcxproj.filters
+/ProjectPearl.sln
