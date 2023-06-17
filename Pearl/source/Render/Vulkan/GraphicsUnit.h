@@ -32,6 +32,11 @@ namespace PEARL_NAMESPACE
 
 		[[nodiscard]] vk::ImageView CreateImageView(vk::Image image, vk::Format format) const;
 
+		[[nodiscard]] uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex_; }
+		[[nodiscard]] uint32_t GetComputeQueueIndex() const { return computeQueueIndex_; }
+
+		[[nodiscard]] vk::Queue GetGraphicsQueue();
+
 	private:
 		std::string name_;
 
@@ -47,5 +52,10 @@ namespace PEARL_NAMESPACE
 
 		uint32_t graphicsQueueIndex_ = ~0u;
 		uint32_t computeQueueIndex_ = ~0u;
+
+		uint32_t graphicsQueuePos_ = 0;
+		std::vector<vk::Queue> graphicsQueues_;
+		uint32_t computeQueuePos_ = 0;
+		std::vector<vk::Queue> computeQueues_;
 	};
 }

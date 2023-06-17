@@ -12,8 +12,12 @@ namespace PEARL_NAMESPACE
 
 		[[nodiscard]] const vk::PipelineLayout& Get() const { return pipelineLayout_; }
 
+		std::vector<vk::DescriptorSet> AllocateDescriptorSet(uint32_t count) const;
+
 	private:
 		void CreateDescriptorSetLayout();
+		void CreateDescriptorSetPool();
+		void CreatePushConstantRanges();
 		void CreatePipelineLayout();
 
 	private:
@@ -21,6 +25,7 @@ namespace PEARL_NAMESPACE
 
 		vk::PipelineLayout pipelineLayout_;
 		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts_;
+		std::vector<vk::PushConstantRange> pushConstantRanges_;
 		vk::DescriptorPool descriptorPool_;
 	};
 }

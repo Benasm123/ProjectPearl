@@ -31,9 +31,10 @@ std::vector<CommandBuffer> CommandPool::AllocateCommandBuffers(const uint32_t nu
 
 	std::vector<CommandBuffer> commandBuffers;
 
+	commandBuffers.reserve(vulkanCommandBuffers.size());
 	for (const vk::CommandBuffer commandBuffer : vulkanCommandBuffers)
 	{
-		commandBuffers.push_back(CommandBuffer(commandBuffer));
+		commandBuffers.emplace_back(commandBuffer);
 	}
 
 	return commandBuffers;

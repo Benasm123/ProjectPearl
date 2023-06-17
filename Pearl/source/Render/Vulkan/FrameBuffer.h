@@ -12,6 +12,8 @@ namespace PEARL_NAMESPACE
 		FrameBuffer(const GraphicsUnit& graphicsUnit, const RenderPass& renderpass, const std::vector<Image>& images);
 		~FrameBuffer();
 
+		[[nodiscard]] vk::Framebuffer Get() const { return framebuffer_; }
+
 	private:
 		const GraphicsUnit& graphicsUnit_;
 

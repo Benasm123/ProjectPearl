@@ -15,6 +15,11 @@ int main(int argc, char* argv[])
 	// const std::unique_ptr<Renderer> renderer = std::make_unique<VulkanRenderer2D>(window);
 	auto renderer = VulkanRenderer2D(window);
 
+	pearl::typesRender::Mesh mesh;
+	mesh.data = utils::GetSpherePoints(1, 0);
+
+	renderer.DrawMesh(&mesh);
+
 	bool running = true;
 	while (running)
 	{

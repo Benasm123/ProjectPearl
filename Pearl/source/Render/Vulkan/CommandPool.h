@@ -8,7 +8,7 @@ namespace PEARL_NAMESPACE
 	class CommandPool
 	{
 	public:
-		CommandPool(const GraphicsUnit& graphicsUnit, uint32_t queueIndex);
+		CommandPool(const GraphicsUnit& graphicsUnit, uint32_t queueIndex); // TODO -> Graphics Queue index here is redundant as the GraphicsUnit holds this information!
 		~CommandPool();
 
 		[[nodiscard]] std::vector<CommandBuffer> AllocateCommandBuffers(uint32_t number, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
