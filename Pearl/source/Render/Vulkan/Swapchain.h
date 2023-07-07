@@ -42,11 +42,13 @@ namespace PEARL_NAMESPACE
 		const RenderSurface& renderSurface_;
 
 		std::vector<Image*> swapchainImages_{};
-		std::vector<vk::ImageView> swapchainImageViews_{};
 		std::vector<FrameBuffer*> frameBuffers_{};
 		std::vector<vk::Fence> fences_;
 		std::vector<vk::Semaphore> imageAcquiredSemaphore_;
 		std::vector<vk::Semaphore> drawCompleteSemaphore_;
+
+		// Depth
+
 
 		// Swapchain settings
 		uint32_t swapchainImageCount_ = 3;

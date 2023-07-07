@@ -15,9 +15,17 @@ namespace PEARL_NAMESPACE
 		[[nodiscard]] vk::Framebuffer Get() const { return framebuffer_; }
 
 	private:
+		void CreateDepthResources();
+
+	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		std::vector<vk::ImageView> attachments_;
+		std::vector<vk::ImageView> colourAttachments_;
+
+		Image depthImage_;
+		vk::ImageView depthImageView_;
+		vk::DeviceMemory depthMemory_;
+
 		vk::Framebuffer framebuffer_;
 	};
 }

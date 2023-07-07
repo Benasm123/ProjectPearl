@@ -149,6 +149,7 @@ void Swapchain::CreateFramebuffers()
 	}
 
 	frameBuffers_.resize(swapchainImageCount_);
+
 	for ( uint32_t i = 0; i < swapchainImageCount_; i++ )
 	{
 		const std::vector<Image> attachments = { *swapchainImages_[i] };

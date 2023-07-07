@@ -162,14 +162,14 @@ void GraphicsUnit::DestroyRenderPass(const vk::RenderPass renderPass) const
 }
 
 
-vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::Format format) const
+vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::Format format, vk::ImageAspectFlagBits imageAspect) const
 {
 	const vk::ImageViewCreateInfo imageViewInfo = vk::ImageViewCreateInfo()
 	                                              .setFlags({})
 	                                              .setImage(image)
 	                                              .setComponents(vk::ComponentMapping().setA(vk::ComponentSwizzle::eIdentity).setB(vk::ComponentSwizzle::eIdentity).setG(vk::ComponentSwizzle::eIdentity).setR(vk::ComponentSwizzle::eIdentity))
 	                                              .setFormat(format)
-	                                              .setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 })
+	                                              .setSubresourceRange({ imageAspect, 0, 1, 0, 1 })
 	                                              .setViewType(vk::ImageViewType::e2D);
 
 	return logicalUnit_.createImageView(imageViewInfo);

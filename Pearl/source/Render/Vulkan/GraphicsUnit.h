@@ -30,7 +30,7 @@ namespace PEARL_NAMESPACE
 		[[nodiscard]] vk::RenderPass CreateRenderPass(const vk::RenderPassCreateInfo& renderPassInfo) const;
 		void DestroyRenderPass(const vk::RenderPass renderPass) const;
 
-		[[nodiscard]] vk::ImageView CreateImageView(vk::Image image, vk::Format format) const;
+		[[nodiscard]] vk::ImageView CreateImageView(const vk::Image image, const vk::Format format, vk::ImageAspectFlagBits imageAspect) const;
 
 		[[nodiscard]] uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex_; }
 		[[nodiscard]] uint32_t GetComputeQueueIndex() const { return computeQueueIndex_; }
