@@ -63,7 +63,21 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	}
 }
 
-VulkanRenderer2D::~VulkanRenderer2D() = default;
+VulkanRenderer2D::~VulkanRenderer2D()
+{
+	WaitFinishRender();
+
+	for (const auto& memory : uniformMemories_)
+	{
+		graphicsUnit_.GetLogical().unmapMemory(memory);
+		graphicsUnit_.GetLogical().freeMemory(memory);
+	}
+
+	for (const auto& buffer : uniformBuffers_)
+	{
+		graphicsUnit_.GetLogical().destroyBuffer(buffer);
+	}
+};
 
 
 void VulkanRenderer2D::DrawLine(PEARL_NAMESPACE::types2D::Point2D start, PEARL_NAMESPACE::types2D::Point2D end)
@@ -83,27 +97,27 @@ void VulkanRenderer2D::DrawRects(std::vector<PEARL_NAMESPACE::types2D::Rect2D> r
 }
 
 
-void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
+void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 {
 	// Make Graphics Unit functions for getting memory buffers and memory.
 	const vk::BufferCreateInfo vertexBufferInfo = vk::BufferCreateInfo()
 	                                              .setFlags({})
-	                                              .setSize(mesh->data.points.size() * sizeof(pearl::typesRender::VertexInput2D))
+	                                              .setSize(mesh.data.points.size() * sizeof(pearl::typesRender::VertexInput2D))
 	                                              .setSharingMode(vk::SharingMode::eExclusive)
 	                                              .setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
 
-	mesh->vertexBuffer = graphicsUnit_.GetLogical().createBuffer(vertexBufferInfo);
+	mesh.vertexBuffer = graphicsUnit_.GetLogical().createBuffer(vertexBufferInfo);
 
-	const vk::MemoryRequirements vertexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh->vertexBuffer);
+	const vk::MemoryRequirements vertexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh.vertexBuffer);
 
 	const vk::MemoryAllocateInfo vertexAllocateInfo = vk::MemoryAllocateInfo()
 	                                                  .setAllocationSize(vertexRequirements.size)
 	                                                  .setMemoryTypeIndex(2);
 
-	mesh->vertexMemory = graphicsUnit_.GetLogical().allocateMemory(vertexAllocateInfo);
-	graphicsUnit_.GetLogical().bindBufferMemory(mesh->vertexBuffer, mesh->vertexMemory, 0);
-	mesh->vertexData = graphicsUnit_.GetLogical().mapMemory(mesh->vertexMemory, 0, vertexRequirements.size, {});
-	std::memcpy(mesh->vertexData, mesh->data.points.data(), mesh->data.points.size() * sizeof(mesh->data.points[0]));
+	mesh.vertexMemory = graphicsUnit_.GetLogical().allocateMemory(vertexAllocateInfo);
+	graphicsUnit_.GetLogical().bindBufferMemory(mesh.vertexBuffer, mesh.vertexMemory, 0);
+	mesh.vertexData = graphicsUnit_.GetLogical().mapMemory(mesh.vertexMemory, 0, vertexRequirements.size, {});
+	std::memcpy(mesh.vertexData, mesh.data.points.data(), mesh.data.points.size() * sizeof(mesh.data.points[0]));
 
 
 	//
@@ -111,27 +125,40 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
 
 	const vk::BufferCreateInfo indexBufferInfo = vk::BufferCreateInfo()
 		.setFlags({})
-		.setSize(mesh->data.triangles.size() * sizeof(pearl::typesRender::Triangle))
+		.setSize(mesh.data.triangles.size() * sizeof(pearl::typesRender::Triangle))
 		.setSharingMode(vk::SharingMode::eExclusive)
 		.setUsage(vk::BufferUsageFlagBits::eIndexBuffer);
 
-	mesh->indexBuffer = graphicsUnit_.GetLogical().createBuffer(indexBufferInfo);
+	mesh.indexBuffer = graphicsUnit_.GetLogical().createBuffer(indexBufferInfo);
 
-	const vk::MemoryRequirements indexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh->indexBuffer);
+	const vk::MemoryRequirements indexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh.indexBuffer);
 
 	const vk::MemoryAllocateInfo indexAllocateInfo = vk::MemoryAllocateInfo()
 		.setAllocationSize(indexRequirements.size)
 		.setMemoryTypeIndex(2);
 
-	mesh->indexMemory = graphicsUnit_.GetLogical().allocateMemory(indexAllocateInfo);
-	graphicsUnit_.GetLogical().bindBufferMemory(mesh->indexBuffer, mesh->indexMemory, 0);
-	mesh->indexData = graphicsUnit_.GetLogical().mapMemory(mesh->indexMemory, 0, indexRequirements.size, {});
-	std::memcpy(mesh->indexData, mesh->data.triangles.data(), mesh->data.triangles.size() * sizeof(mesh->data.triangles[0]));
+	mesh.indexMemory = graphicsUnit_.GetLogical().allocateMemory(indexAllocateInfo);
+	graphicsUnit_.GetLogical().bindBufferMemory(mesh.indexBuffer, mesh.indexMemory, 0);
+	mesh.indexData = graphicsUnit_.GetLogical().mapMemory(mesh.indexMemory, 0, indexRequirements.size, {});
+	std::memcpy(mesh.indexData, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
 
-	vertexCount_ += mesh->data.points.size();
-	meshes_.push_back(mesh);
+	vertexCount_ += mesh.data.points.size();
+	meshes_.push_back(&mesh);
 
-	LOG_TRACE("Drawing mesh with {} triangles", mesh->data.triangles.size());
+	LOG_TRACE("Drawing mesh with {} triangles", mesh.data.triangles.size());
+}
+
+void VulkanRenderer2D::DestroyMesh(const pearl::typesRender::Mesh& mesh)
+{
+	WaitFinishRender();
+
+	graphicsUnit_.GetLogical().unmapMemory(mesh.vertexMemory);
+	graphicsUnit_.GetLogical().freeMemory(mesh.vertexMemory);
+	graphicsUnit_.GetLogical().destroyBuffer(mesh.vertexBuffer);
+
+	graphicsUnit_.GetLogical().unmapMemory(mesh.indexMemory);
+	graphicsUnit_.GetLogical().freeMemory(mesh.indexMemory);
+	graphicsUnit_.GetLogical().destroyBuffer(mesh.indexBuffer);
 }
 
 
@@ -237,4 +264,9 @@ bool VulkanRenderer2D::Update()
 {
 	Render();
 	return true;
+}
+
+void VulkanRenderer2D::WaitFinishRender()
+{
+	graphicsUnit_.GetLogical().waitIdle();
 }
