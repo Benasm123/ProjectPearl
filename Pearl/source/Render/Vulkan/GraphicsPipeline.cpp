@@ -249,4 +249,6 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 	{
 		graphicsUnit_.GetLogical().destroyShaderModule(module);
 	}
+
+	graphicsUnit_.GetLogical().destroyPipelineCache(pipelineCache);
 }

@@ -20,18 +20,18 @@ int main(int argc, char* argv[])
 	mesh.data = utils::GetPlanePoints(3.0f);
 	mesh.position.z = 40;
 	mesh.position.y = -10;
-
+	
 	pearl::typesRender::Mesh mesh2;
 	mesh2.data = utils::GetSpherePoints(1.0f, 3);
 	mesh2.position.z = 40;
 	mesh2.position.y = 0;
 
-	// renderer.DrawMesh(&mesh);
-	renderer.DrawMesh(&mesh2);
+	renderer.DrawMesh(mesh);
+	renderer.DrawMesh(mesh2);
 
 	float vel = 0.0;
 
-	renderer.Build();
+	// renderer.Build();
 
 	double deltaTime = 0.0f;
 	auto oldTime = std::chrono::system_clock::now();
@@ -42,19 +42,22 @@ int main(int argc, char* argv[])
 		auto currentTime = std::chrono::system_clock::now();
 		deltaTime = static_cast<double>((std::chrono::duration_cast<std::chrono::microseconds>(currentTime - oldTime)).count()) / 1e+6;
 
-		vel += 9.0f * 20.0f * deltaTime;
-		mesh2.position.y -= vel * deltaTime;
-
-		if ((mesh2.position.y - 1) < -10)
-		{
-			vel *= -0.9f;
-			mesh2.position.y = -9;
-		}
+		// vel += 9.0f * 20.0f * deltaTime;
+		// mesh2.position.y -= vel * deltaTime;
+		//
+		// if ((mesh2.position.y - 1) < -10)
+		// {
+		// 	vel *= -0.9f;
+		// 	mesh2.position.y = -9;
+		// }
 
 		oldTime = currentTime;
 		running = window.Update();
 		renderer.Update();
 	}
+
+	renderer.DestroyMesh(mesh);
+	renderer.DestroyMesh(mesh2);
 
 	return 0;
 }

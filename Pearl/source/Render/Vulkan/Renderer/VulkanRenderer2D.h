@@ -24,8 +24,10 @@ public:
 	virtual void DrawLines(std::vector<PEARL_NAMESPACE::types2D::Point2D> points) override;
 	virtual void DrawRect(PEARL_NAMESPACE::types2D::Rect2D rect) override;
 	virtual void DrawRects(std::vector<PEARL_NAMESPACE::types2D::Rect2D> rects) override;
-	virtual void DrawMesh(pearl::typesRender::Mesh* mesh);
+	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
+	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
 	virtual bool Update() override;
+	void WaitFinishRender();
 	void Build();
 
 private:
