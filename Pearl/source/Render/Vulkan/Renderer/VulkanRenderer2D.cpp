@@ -1,7 +1,10 @@
 #include "VulkanRenderer2D.h"
 
+#include <iostream>
 #include <Core/Config.h>
 #include "Core/Logger.h"
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 
 /**
@@ -19,13 +22,45 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	, graphicsPipeline_{graphicsUnit_, renderSurface_, renderPass_, graphicsPipelineLayout_}
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
 {
+	projectionMatrix_ = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+	projectionMatrix_[1][1] *= -1;
+
+	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
+
+	const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+
+	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
+
+	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
+
+	vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
+		.setDescriptorCount(1)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setPBufferInfo(&descriptorBufferInfo);
+
 	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
 	for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
 	{
 		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
-	}
 
-	currentRenderIndex_ = swapchain_.GetNextImageIndex(currentRenderIndex_);
+		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
+
+		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
+
+		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
+
+		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
+
+		uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
+
+		memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
+
+		graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
+
+		descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
+		write.setDstSet(descriptorSets_[i]);
+		graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
+	}
 }
 
 VulkanRenderer2D::~VulkanRenderer2D() = default;
@@ -53,7 +88,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
 	// Make Graphics Unit functions for getting memory buffers and memory.
 	const vk::BufferCreateInfo vertexBufferInfo = vk::BufferCreateInfo()
 	                                              .setFlags({})
-	                                              .setSize(mesh->data.points.size() * sizeof(mesh->data.points[0]))
+	                                              .setSize(mesh->data.points.size() * sizeof(pearl::typesRender::VertexInput2D))
 	                                              .setSharingMode(vk::SharingMode::eExclusive)
 	                                              .setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
 
@@ -68,7 +103,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
 	mesh->vertexMemory = graphicsUnit_.GetLogical().allocateMemory(vertexAllocateInfo);
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh->vertexBuffer, mesh->vertexMemory, 0);
 	mesh->vertexData = graphicsUnit_.GetLogical().mapMemory(mesh->vertexMemory, 0, vertexRequirements.size, {});
-	std::memcpy(mesh->vertexData, mesh->data.points.data(), mesh->data.points.size());
+	std::memcpy(mesh->vertexData, mesh->data.points.data(), mesh->data.points.size() * sizeof(mesh->data.points[0]));
 
 
 	//
@@ -76,7 +111,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
 
 	const vk::BufferCreateInfo indexBufferInfo = vk::BufferCreateInfo()
 		.setFlags({})
-		.setSize(mesh->data.triangles.size() * sizeof(mesh->data.triangles[0]))
+		.setSize(mesh->data.triangles.size() * sizeof(pearl::typesRender::Triangle))
 		.setSharingMode(vk::SharingMode::eExclusive)
 		.setUsage(vk::BufferUsageFlagBits::eIndexBuffer);
 
@@ -91,20 +126,19 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh* mesh)
 	mesh->indexMemory = graphicsUnit_.GetLogical().allocateMemory(indexAllocateInfo);
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh->indexBuffer, mesh->indexMemory, 0);
 	mesh->indexData = graphicsUnit_.GetLogical().mapMemory(mesh->indexMemory, 0, indexRequirements.size, {});
-	std::memcpy(mesh->indexData, mesh->data.triangles.data(), mesh->data.triangles.size());
+	std::memcpy(mesh->indexData, mesh->data.triangles.data(), mesh->data.triangles.size() * sizeof(mesh->data.triangles[0]));
 
-	vertexCount_ = mesh->data.points.size();
+	vertexCount_ += mesh->data.points.size();
 	meshes_.push_back(mesh);
 
-	for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
-	{
-		BuildCommandBufferCommands(i);
-	}
+	LOG_TRACE("Drawing mesh with {} triangles", mesh->data.triangles.size());
 }
 
 
 void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
+	commandBuffers_[index].Get().reset();
+
 	constexpr vk::ClearValue clearValues[1] = {
 		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
 	};
@@ -114,7 +148,7 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 	commandBuffers_[index].Get().beginRenderPass(vk::RenderPassBeginInfo()
 												 .setRenderPass(renderPass_.Get())
 												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
-												 .setRenderArea(vk::Rect2D(vk::Offset2D{}, vk::Extent2D(1400, 1400)))
+												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, vk::Extent2D(1000, 1000)))
 												 .setClearValueCount(1)
 												 .setPClearValues(clearValues),
 												 vk::SubpassContents::eInline);
@@ -123,10 +157,18 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 
 	commandBuffers_[index].Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
 
-	vk::DeviceSize offset[] = {0};
-	commandBuffers_[index].Get().bindVertexBuffers(0, 1, &meshes_[0]->vertexBuffer, offset);
+	for (int i = 0; i < meshes_.size(); i++)
+	{
+		commandBuffers_[index].Get().pushConstants(graphicsPipelineLayout_.Get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(pearl::typesRender::PushConstant), &meshes_[i]->mvp);
 
-	commandBuffers_[index].Get().draw(vertexCount_ * 3, 1, 0, 0);
+		constexpr vk::DeviceSize offset[] = { 0 };
+		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &meshes_[i]->vertexBuffer, offset);
+
+		commandBuffers_[index].Get().bindIndexBuffer(meshes_[i]->indexBuffer, 0, vk::IndexType::eUint32);
+
+		commandBuffers_[index].Get().drawIndexed(meshes_[i]->data.triangles.size() * 3, 1, 0, 0, 0);
+
+	}
 
 	commandBuffers_[index].Get().endRenderPass();
 
@@ -139,29 +181,56 @@ bool VulkanRenderer2D::Render()
 	vk::Result result = graphicsUnit_.GetLogical().waitForFences(swapchain_.GetFences()[currentRenderIndex_], VK_TRUE, UINT64_MAX);
 	graphicsUnit_.GetLogical().resetFences({ swapchain_.GetFences()[currentRenderIndex_] });
 
+	const uint32_t nextImageIndex = swapchain_.GetNextImageIndex(currentRenderIndex_);
+
+	BuildCommandBufferCommands(currentRenderIndex_);
+
+	std::vector<vk::SubmitInfo> submitInfos = {};
+
+	for (int i = 0; i < meshes_.size(); i++)
+	{
+		glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+		
+		meshes_[i]->modelMatrix = glm::translate(glm::mat4(1.0f), meshes_[i]->position);
+
+		meshes_[i]->mvp.mvp = mvp * meshes_[i]->modelMatrix;
+
+		memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
+	}
+
 	vk::PipelineStageFlags pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
-	graphicsUnit_.GetGraphicsQueue().submit(
-		vk::SubmitInfo()
-		.setWaitDstStageMask(pipeStageFlags)
-		.setWaitSemaphoreCount(1)
-		.setPWaitSemaphores(&swapchain_.GetImageAcquiredSemaphores()[currentRenderIndex_])
-		.setCommandBuffers(commandBuffers_[currentRenderIndex_].Get())
-		.setSignalSemaphoreCount(1)
-		.setPSignalSemaphores(&swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_])
-		, swapchain_.GetFences()[currentRenderIndex_]);
+	submitInfos.push_back(vk::SubmitInfo()
+						  .setWaitDstStageMask(pipeStageFlags)
+						  .setWaitSemaphoreCount(1)
+						  .setPWaitSemaphores(&swapchain_.GetImageAcquiredSemaphores()[currentRenderIndex_])
+						  .setCommandBufferCount(1)
+						  .setPCommandBuffers(&commandBuffers_[currentRenderIndex_].Get())
+						  .setSignalSemaphoreCount(1)
+						  .setPSignalSemaphores(&swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_]));
+
+	graphicsUnit_.GetGraphicsQueue().submit(submitInfos, swapchain_.GetFences()[currentRenderIndex_]);
 
 	const auto presentInfo = vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
 		.setPWaitSemaphores(&swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_])
 		.setSwapchains(swapchain_.Get())
-		.setImageIndices(currentRenderIndex_);
-	
+		.setImageIndices(nextImageIndex);
+
 	result = graphicsUnit_.GetGraphicsQueue().presentKHR(&presentInfo);
 
-	currentRenderIndex_ = swapchain_.GetNextImageIndex(currentRenderIndex_);
+	currentRenderIndex_ = (currentRenderIndex_ + 1) % 3;
 
 	return true;
+}
+
+
+void VulkanRenderer2D::Build()
+{
+	for ( int i = 0; i < swapchain_.GetImageCount(); i++ )
+	{
+		BuildCommandBufferCommands(i);
+	}
 }
 
 bool VulkanRenderer2D::Update()

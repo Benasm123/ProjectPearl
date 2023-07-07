@@ -70,7 +70,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 	vk::VertexInputAttributeDescription vertexPositionInfo = vk::VertexInputAttributeDescription()
 		.setLocation(0)
 		.setBinding(0)
-		.setFormat(vk::Format::eR32G32Sfloat)
+		.setFormat(vk::Format::eR32G32B32Sfloat)
 		.setOffset(0);
 
 	vk::VertexInputAttributeDescription vertexNormalInfo = vk::VertexInputAttributeDescription()
@@ -100,7 +100,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
 		.setFlags({})
-		.setTopology(vk::PrimitiveTopology::eTriangleStrip)
+		.setTopology(vk::PrimitiveTopology::eTriangleList)
 		.setPrimitiveRestartEnable(VK_FALSE);
 
 #pragma endregion VertexInputAssembly
@@ -121,7 +121,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setHeight(static_cast<float>(renderExtent.height))
 		.setX(0)
 		.setY(0)
-		.setMinDepth(0.1f)
+		.setMinDepth(0.0f)
 		.setMaxDepth(1.0f);
 
 	std::vector<vk::Viewport> viewports = { viewport_ };
@@ -189,7 +189,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 #pragma region ColourBlendState
 
 	vk::PipelineColorBlendAttachmentState colourAttachmentState = vk::PipelineColorBlendAttachmentState()
-		.setBlendEnable(VK_TRUE)
+		.setBlendEnable(VK_FALSE)
 		.setSrcColorBlendFactor(vk::BlendFactor::eSrcColor)
 		.setDstColorBlendFactor(vk::BlendFactor::eOneMinusDstColor)
 		.setColorBlendOp(vk::BlendOp::eAdd)

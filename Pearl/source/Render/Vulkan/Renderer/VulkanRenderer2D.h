@@ -1,3 +1,4 @@
+
 #pragma once
 #include "Render/Vulkan/RendererInstance.h"
 #include "Render/Generic/Renderer2D.h"
@@ -25,11 +26,12 @@ public:
 	virtual void DrawRects(std::vector<PEARL_NAMESPACE::types2D::Rect2D> rects) override;
 	virtual void DrawMesh(pearl::typesRender::Mesh* mesh);
 	virtual bool Update() override;
+	void Build();
 
 private:
 	void BuildCommandBufferCommands(uint32_t index);
 	virtual bool Render() override;
-	
+
 private:
 	const pearl::Window& window_;
 	pearl::RendererInstance instance_;
@@ -48,7 +50,17 @@ private:
 	uint32_t currentRenderIndex_ = 0;
 
 	// TEST
+	std::vector<vk::Buffer> uniformBuffers_;
+	std::vector<vk::DeviceMemory> uniformMemories_;
+	std::vector<void*> uniformMemoryPtrs_;
+
+	glm::vec3 cameraPosition_ = { 0.0f, 0.0f, -1.0f };
+	glm::vec3 origin_ = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 up_ = { 0.0f, 1.0f, 0.0f };
+
+	glm::mat4 projectionMatrix_{};
+	glm::mat4 viewMatrix_{};
+
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	uint32_t vertexCount_ = 0;
 }; 
-

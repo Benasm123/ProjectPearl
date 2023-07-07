@@ -7,6 +7,7 @@ using namespace PEARL_NAMESPACE;
 PipelineLayout::PipelineLayout(const GraphicsUnit& graphicsUnit)
 	: graphicsUnit_{graphicsUnit}
 {
+	CreatePushConstantRanges();
 	CreateDescriptorSetLayout();
 	CreateDescriptorSetPool();
 	CreatePipelineLayout();
@@ -35,7 +36,28 @@ void PipelineLayout::CreateDescriptorSetLayout()
 	                                               .setPImmutableSamplers(nullptr)
 	                                               .setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding};
+	const vk::DescriptorSetLayoutBinding tbinding = vk::DescriptorSetLayoutBinding()
+		.setBinding(1)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPImmutableSamplers(nullptr)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+	const vk::DescriptorSetLayoutBinding nbinding = vk::DescriptorSetLayoutBinding()
+		.setBinding(2)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPImmutableSamplers(nullptr)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+	const vk::DescriptorSetLayoutBinding mvpBinding = vk::DescriptorSetLayoutBinding()
+		.setBinding(3)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPImmutableSamplers(nullptr)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding, mvpBinding};
 
 	const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = vk::DescriptorSetLayoutCreateInfo()
 		.setFlags({})

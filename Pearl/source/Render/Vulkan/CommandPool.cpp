@@ -7,7 +7,7 @@ CommandPool::CommandPool(const GraphicsUnit& graphicsUnit, const uint32_t queueI
 	:graphicsUnit_{graphicsUnit}
 {
 	const vk::CommandPoolCreateInfo commandPoolInfo = vk::CommandPoolCreateInfo()
-	                                                  .setFlags({})
+	                                                  .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
 	                                                  .setQueueFamilyIndex(queueIndex);
 
 	commandPool_ = graphicsUnit_.GetLogical().createCommandPool(commandPoolInfo);

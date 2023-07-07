@@ -8,6 +8,8 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 	: instance_(instance)
 	, graphicsUnit_(device)
 {
+	requiredFeatures_.setFillModeNonSolid(VK_TRUE);
+
 	if ( !graphicsUnit_ ) throw std::exception("Invalid graphics unit");
 
 	layers_ = instance_.GetLayers();

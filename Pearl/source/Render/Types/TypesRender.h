@@ -6,7 +6,7 @@ namespace PEARL_NAMESPACE::typesRender
 {
 	struct PushConstant
 	{
-		float x, y, z;
+		glm::mat4 mvp;
 	};
 
 	struct Triangle
@@ -30,11 +30,20 @@ namespace PEARL_NAMESPACE::typesRender
 	struct Mesh
 	{
 		MeshData data;
+
 		vk::Buffer vertexBuffer;
 		vk::DeviceMemory vertexMemory;
 		void* vertexData;
+
 		vk::Buffer indexBuffer;
 		vk::DeviceMemory indexMemory;
 		void* indexData;
+
+		glm::mat4 modelMatrix = glm::mat4(1.0f);
+
+		PushConstant mvp;
+
+		glm::vec3 position = glm::vec3(0.0f);
+		glm::vec3 rotation = glm::vec3(0.0f);
 	};
 }

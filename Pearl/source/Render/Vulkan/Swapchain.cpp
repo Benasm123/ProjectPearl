@@ -46,7 +46,15 @@ Swapchain::~Swapchain()
 
 uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
 {
-	return graphicsUnit_.GetLogical().acquireNextImageKHR(swapchain_, UINT64_MAX, imageAcquiredSemaphore_[currentIndex], vk::Fence()).value;
+	const auto result = graphicsUnit_.GetLogical().acquireNextImageKHR(swapchain_, UINT64_MAX, imageAcquiredSemaphore_[currentIndex], VK_NULL_HANDLE);
+
+	if (result.result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("couldnt get next image!");
+		return -1;
+	}
+
+	return result.value;
 }
 
 
