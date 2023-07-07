@@ -8,6 +8,8 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 	: instance_(instance)
 	, graphicsUnit_(device)
 {
+	requiredFeatures_.setFillModeNonSolid(VK_TRUE);
+
 	if ( !graphicsUnit_ ) throw std::exception("Invalid graphics unit");
 
 	layers_ = instance_.GetLayers();
@@ -90,6 +92,11 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 	LOG_TRACE("Created Logical Device");
 
 	name_ = std::string(graphicsUnit_.getProperties().deviceName.data());
+
+	for (int i = 0; i < Config::renderer::numberOfGraphicsQueuesToUse; i++)
+	{
+		graphicsQueues_.push_back(logicalUnit_.getQueue(graphicsQueueIndex_, i));
+	}
 }
 
 
@@ -166,6 +173,14 @@ vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::For
 	                                              .setViewType(vk::ImageViewType::e2D);
 
 	return logicalUnit_.createImageView(imageViewInfo);
+}
+
+
+vk::Queue GraphicsUnit::GetGraphicsQueue()
+{
+	// graphicsQueuePos_++;
+	// graphicsQueuePos_ %= Config::renderer::numberOfGraphicsQueuesToUse;
+	return graphicsQueues_[graphicsQueuePos_];
 }
 
 

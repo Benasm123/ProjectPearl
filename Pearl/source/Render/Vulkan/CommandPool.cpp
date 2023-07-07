@@ -7,7 +7,7 @@ CommandPool::CommandPool(const GraphicsUnit& graphicsUnit, const uint32_t queueI
 	:graphicsUnit_{graphicsUnit}
 {
 	const vk::CommandPoolCreateInfo commandPoolInfo = vk::CommandPoolCreateInfo()
-	                                                  .setFlags({})
+	                                                  .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
 	                                                  .setQueueFamilyIndex(queueIndex);
 
 	commandPool_ = graphicsUnit_.GetLogical().createCommandPool(commandPoolInfo);
@@ -31,9 +31,10 @@ std::vector<CommandBuffer> CommandPool::AllocateCommandBuffers(const uint32_t nu
 
 	std::vector<CommandBuffer> commandBuffers;
 
+	commandBuffers.reserve(vulkanCommandBuffers.size());
 	for (const vk::CommandBuffer commandBuffer : vulkanCommandBuffers)
 	{
-		commandBuffers.push_back(CommandBuffer(commandBuffer));
+		commandBuffers.emplace_back(commandBuffer);
 	}
 
 	return commandBuffers;

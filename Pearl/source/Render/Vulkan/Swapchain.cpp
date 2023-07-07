@@ -9,11 +9,27 @@ Swapchain::Swapchain(const GraphicsUnit& graphicsUnit, const RenderPass& renderP
 {
 	GetSwapchainSettings();
 	Recreate();
+	CreateSynchronization();
 }
 
 
 Swapchain::~Swapchain()
 {
+	for (const vk::Fence fence : fences_)
+	{
+		graphicsUnit_.GetLogical().destroyFence(fence);
+	}
+
+	for ( const vk::Semaphore semaphore : drawCompleteSemaphore_ )
+	{
+		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+	}
+
+	for ( const vk::Semaphore semaphore : imageAcquiredSemaphore_ )
+	{
+		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+	}
+
 	for (const Image* image : swapchainImages_)
 	{
 		delete image;
@@ -25,6 +41,20 @@ Swapchain::~Swapchain()
 	}
 
 	graphicsUnit_.DestroySwapchain(swapchain_);
+}
+
+
+uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
+{
+	const auto result = graphicsUnit_.GetLogical().acquireNextImageKHR(swapchain_, UINT64_MAX, imageAcquiredSemaphore_[currentIndex], VK_NULL_HANDLE);
+
+	if (result.result != vk::Result::eSuccess)
+	{
+		LOG_ERROR("couldnt get next image!");
+		return -1;
+	}
+
+	return result.value;
 }
 
 
@@ -93,6 +123,11 @@ void Swapchain::GetSwapchainSettings()
 
 void Swapchain::GetSwapchainImages()
 {
+	for ( const Image* image : swapchainImages_ )
+	{
+		delete image;
+	}
+
 	const auto surfaceCapabilities = graphicsUnit_.GetSurfaceCapabilities(renderSurface_);
 	const std::vector<vk::Image> swapchainImages = graphicsUnit_.GetSwapchainImages(swapchain_);
 	swapchainImageCount_ = static_cast<uint32_t>(swapchainImages.size()); // Update swapchain Image count to actual count of images.
@@ -108,10 +143,29 @@ void Swapchain::GetSwapchainImages()
 
 void Swapchain::CreateFramebuffers()
 {
+	for ( const FrameBuffer* frameBuffer : frameBuffers_ )
+	{
+		delete frameBuffer;
+	}
+
 	frameBuffers_.resize(swapchainImageCount_);
 	for ( uint32_t i = 0; i < swapchainImageCount_; i++ )
 	{
 		const std::vector<Image> attachments = { *swapchainImages_[i] };
 		frameBuffers_[i] = new FrameBuffer{graphicsUnit_, renderPass_, attachments};
+	}
+}
+
+
+void Swapchain::CreateSynchronization()
+{
+	constexpr vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
+	constexpr vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled);
+
+	for (uint32_t i = 0; i < (swapchainImageCount_ + 1); i++)
+	{
+		imageAcquiredSemaphore_.push_back(graphicsUnit_.GetLogical().createSemaphore(semaphoreInfo));
+		drawCompleteSemaphore_.push_back(graphicsUnit_.GetLogical().createSemaphore(semaphoreInfo));
+		fences_.push_back(graphicsUnit_.GetLogical().createFence(fenceInfo));
 	}
 }

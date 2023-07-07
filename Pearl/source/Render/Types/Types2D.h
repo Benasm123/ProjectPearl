@@ -1,10 +1,24 @@
 #pragma once
+#include <glm/glm.hpp>
 
-namespace Types2D
+#include "PearlCore.h"
+
+namespace PEARL_NAMESPACE::types2D
 {
 	struct Point2D
 	{
 		float x, y;
+	};
+
+	struct Point3D
+	{
+		float x, y, z;
+
+
+		Point3D operator+(const Point3D& v1) const
+		{
+			return Point3D{ this->x + v1.x, this->y + v1.y, this->z + v1.z };
+		}
 	};
 
 	struct Rect2D
