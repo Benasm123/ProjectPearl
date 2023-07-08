@@ -24,43 +24,43 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 {
 	projectionMatrix_ = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 	projectionMatrix_[1][1] *= -1;
-
+	
 	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
 
-	// const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
-	//
-	// auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
-	//
-	// constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
-	//
-	// vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
-	// 	.setDescriptorCount(1)
-	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-	// 	.setPBufferInfo(&descriptorBufferInfo);
+	const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+	
+	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
+	
+	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
+	
+	vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
+		.setDescriptorCount(1)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setPBufferInfo(&descriptorBufferInfo);
 
-	// commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
-	// for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
-	// {
-	// 	descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
+	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
+	for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
+	{
+		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
 
-		// uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
+		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
 
-		// const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
-		//
-		// vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
-		//
-		// uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
-		//
-		// uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
+		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
+		
+		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
+		
+		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
+		
+		uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
 
-		// memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
+		memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
 
-		// graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
+		graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
 
-		// descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
-		// write.setDstSet(descriptorSets_[i]);
-		// graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
-	// }
+		descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
+		write.setDstSet(descriptorSets_[i]);
+		graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
+	}
 }
 
 VulkanRenderer2D::~VulkanRenderer2D()

@@ -65,5 +65,4 @@ private:
 
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	uint32_t vertexCount_ = 0;
-	std::vector<uint32_t> crashes_{};
 }; 

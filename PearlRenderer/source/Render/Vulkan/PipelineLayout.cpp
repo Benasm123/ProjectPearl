@@ -32,7 +32,7 @@ void PipelineLayout::CreateDescriptorSetLayout()
 	const vk::DescriptorSetLayoutBinding binding = vk::DescriptorSetLayoutBinding()
 	                                               .setBinding(0)
 	                                               .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-	                                               .setDescriptorCount(2)
+	                                               .setDescriptorCount(1)
 	                                               .setPImmutableSamplers(nullptr)
 	                                               .setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
@@ -50,14 +50,14 @@ void PipelineLayout::CreateDescriptorSetLayout()
 		.setPImmutableSamplers(nullptr)
 		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	// const vk::DescriptorSetLayoutBinding mvpBinding = vk::DescriptorSetLayoutBinding()
-	// 	.setBinding(3)
-	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-	// 	.setDescriptorCount(1)
-	// 	.setPImmutableSamplers(nullptr)
-	// 	.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	const vk::DescriptorSetLayoutBinding mvpBinding = vk::DescriptorSetLayoutBinding()
+		.setBinding(3)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPImmutableSamplers(nullptr)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding};
+	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding, mvpBinding};
 
 	const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = vk::DescriptorSetLayoutCreateInfo()
 		.setFlags({})
@@ -68,10 +68,11 @@ void PipelineLayout::CreateDescriptorSetLayout()
 }
 
 
+//TODO-> Make descriptor set pools per swapchain image instead of here, only need layout here!
 void PipelineLayout::CreateDescriptorSetPool()
 {
 	const vk::DescriptorPoolSize poolSize = vk::DescriptorPoolSize()
-	                                        .setDescriptorCount(3)
+	                                        .setDescriptorCount(12) // This is currently 4 * the number of images (assumed to be 3), however this should be handled better.
 	                                        .setType(vk::DescriptorType::eUniformBuffer);
 
 	const std::vector<vk::DescriptorPoolSize> poolSizes = { poolSize };
@@ -118,4 +119,6 @@ std::vector<vk::DescriptorSet> PipelineLayout::AllocateDescriptorSet(const uint3
 	                                                      .setDescriptorSetCount(count);
 
 	return graphicsUnit_.GetLogical().allocateDescriptorSets(setAllocateInfo);
+	return{};
 }
+
