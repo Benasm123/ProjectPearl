@@ -32,7 +32,7 @@ void PipelineLayout::CreateDescriptorSetLayout()
 	const vk::DescriptorSetLayoutBinding binding = vk::DescriptorSetLayoutBinding()
 	                                               .setBinding(0)
 	                                               .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-	                                               .setDescriptorCount(1)
+	                                               .setDescriptorCount(2)
 	                                               .setPImmutableSamplers(nullptr)
 	                                               .setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
@@ -50,14 +50,14 @@ void PipelineLayout::CreateDescriptorSetLayout()
 		.setPImmutableSamplers(nullptr)
 		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	const vk::DescriptorSetLayoutBinding mvpBinding = vk::DescriptorSetLayoutBinding()
-		.setBinding(3)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1)
-		.setPImmutableSamplers(nullptr)
-		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	// const vk::DescriptorSetLayoutBinding mvpBinding = vk::DescriptorSetLayoutBinding()
+	// 	.setBinding(3)
+	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+	// 	.setDescriptorCount(1)
+	// 	.setPImmutableSamplers(nullptr)
+	// 	.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding, mvpBinding};
+	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding};
 
 	const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = vk::DescriptorSetLayoutCreateInfo()
 		.setFlags({})

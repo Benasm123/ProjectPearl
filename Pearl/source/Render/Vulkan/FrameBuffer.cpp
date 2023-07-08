@@ -6,6 +6,7 @@ FrameBuffer::FrameBuffer(const GraphicsUnit& graphicsUnit, const RenderPass& ren
 	: graphicsUnit_{graphicsUnit}
 	// , depthImage_{ graphicsUnit_, vk::Format::eD32Sfloat, images.front().Size(), vk::ImageLayout::eUndefined, vk::ImageUsageFlagBits::eDepthStencilAttachment }
 {
+	CreateDepthResources();
 
 	for (const Image& image : images)
 	{

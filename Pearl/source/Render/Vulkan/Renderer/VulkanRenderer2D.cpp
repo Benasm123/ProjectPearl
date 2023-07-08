@@ -27,40 +27,40 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 
 	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
 
-	const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+	// const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+	//
+	// auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
+	//
+	// constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
+	//
+	// vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
+	// 	.setDescriptorCount(1)
+	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+	// 	.setPBufferInfo(&descriptorBufferInfo);
 
-	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
+	// commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
+	// for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
+	// {
+	// 	descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
 
-	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
+		// uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
 
-	vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
-		.setDescriptorCount(1)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setPBufferInfo(&descriptorBufferInfo);
+		// const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
+		//
+		// vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
+		//
+		// uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
+		//
+		// uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
 
-	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
-	for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
-	{
-		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
+		// memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
 
-		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
+		// graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
 
-		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
-
-		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
-
-		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
-
-		uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
-
-		memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
-
-		graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
-
-		descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
-		write.setDstSet(descriptorSets_[i]);
-		graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
-	}
+		// descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
+		// write.setDstSet(descriptorSets_[i]);
+		// graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
+	// }
 }
 
 VulkanRenderer2D::~VulkanRenderer2D()
@@ -141,8 +141,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh.indexBuffer, mesh.indexMemory, 0);
 	mesh.indexData = graphicsUnit_.GetLogical().mapMemory(mesh.indexMemory, 0, indexRequirements.size, {});
 	std::memcpy(mesh.indexData, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
-
-	vertexCount_ += mesh.data.points.size();
+	
 	meshes_.push_back(&mesh);
 
 	LOG_TRACE("Drawing mesh with {} triangles", mesh.data.triangles.size());
@@ -222,7 +221,7 @@ bool VulkanRenderer2D::Render()
 
 		meshes_[i]->mvp.mvp = mvp * meshes_[i]->modelMatrix;
 
-		memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
+		// memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
 	}
 
 	vk::PipelineStageFlags pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -254,7 +253,7 @@ bool VulkanRenderer2D::Render()
 
 void VulkanRenderer2D::Build()
 {
-	for ( int i = 0; i < swapchain_.GetImageCount(); i++ )
+	for ( uint32_t i = 0; i < swapchain_.GetImageCount(); i++ )
 	{
 		BuildCommandBufferCommands(i);
 	}
@@ -266,7 +265,7 @@ bool VulkanRenderer2D::Update()
 	return true;
 }
 
-void VulkanRenderer2D::WaitFinishRender()
+void VulkanRenderer2D::WaitFinishRender() const
 {
 	graphicsUnit_.GetLogical().waitIdle();
 }

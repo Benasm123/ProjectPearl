@@ -27,7 +27,7 @@ public:
 	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
 	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
 	virtual bool Update() override;
-	void WaitFinishRender();
+	void WaitFinishRender() const;
 	void Build();
 
 private:
@@ -65,4 +65,5 @@ private:
 
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	uint32_t vertexCount_ = 0;
+	std::vector<uint32_t> crashes_{};
 }; 
