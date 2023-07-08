@@ -4,7 +4,7 @@ using namespace PEARL_NAMESPACE;
 
 FrameBuffer::FrameBuffer(const GraphicsUnit& graphicsUnit, const RenderPass& renderpass, const std::vector<Image>& images)
 	: graphicsUnit_{graphicsUnit}
-	, depthImage_{ graphicsUnit_, vk::Format::eD32Sfloat, images.front().Size(), vk::ImageLayout::eUndefined, vk::ImageUsageFlagBits::eDepthStencilAttachment }
+	// , depthImage_{ graphicsUnit_, vk::Format::eD32Sfloat, images.front().Size(), vk::ImageLayout::eUndefined, vk::ImageUsageFlagBits::eDepthStencilAttachment }
 {
 
 	for (const Image& image : images)
@@ -37,5 +37,5 @@ FrameBuffer::~FrameBuffer()
 
 void FrameBuffer::CreateDepthResources()
 {
-	depthImageView_ = graphicsUnit_.CreateImageView(depthImage_.Get(), depthImage_.Format(), vk::ImageAspectFlagBits::eDepth);
+	// depthImageView_ = graphicsUnit_.CreateImageView(depthImage_.Get(), depthImage_.Format(), vk::ImageAspectFlagBits::eDepth);
 }

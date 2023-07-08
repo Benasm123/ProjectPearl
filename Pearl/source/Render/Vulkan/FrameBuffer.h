@@ -22,9 +22,9 @@ namespace PEARL_NAMESPACE
 
 		std::vector<vk::ImageView> colourAttachments_;
 
-		Image depthImage_;
-		vk::ImageView depthImageView_;
-		vk::DeviceMemory depthMemory_;
+		// Image depthImage_;
+		// vk::ImageView depthImageView_;
+		// vk::DeviceMemory depthMemory_;
 
 		vk::Framebuffer framebuffer_;
 	};
