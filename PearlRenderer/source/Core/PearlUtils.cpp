@@ -100,13 +100,13 @@ pearl::typesRender::MeshData utils::GetPlanePoints(float size)
 	std::vector <pearl::typesRender::VertexInput2D> points{};
 	std::vector<pearl::typesRender::Triangle> triangles{};
 
-	points.emplace_back(glm::vec3{-1 * size, 0, -1 * size}, glm::vec3{}, glm::vec3{});
-	points.emplace_back(glm::vec3{1 * size, 0, -1 * size}, glm::vec3{}, glm::vec3{});
-	points.emplace_back(glm::vec3{-1 * size, 0, 1 * size}, glm::vec3{}, glm::vec3{});
-	points.emplace_back(glm::vec3{1 * size, 0, 1 * size}, glm::vec3{}, glm::vec3{});
+	points.emplace_back(glm::vec3{-1 * size, 0, -1 * size}, glm::vec3{0, 1, 0}, glm::vec3{});
+	points.emplace_back(glm::vec3{1 * size, 0, -1 * size}, glm::vec3{0, 1, 0}, glm::vec3{});
+	points.emplace_back(glm::vec3{-1 * size, 0, 1 * size}, glm::vec3{0, 1, 0}, glm::vec3{});
+	points.emplace_back(glm::vec3{1 * size, 0, 1 * size}, glm::vec3{0, 1, 0}, glm::vec3{});
 
-	triangles.push_back({ 2, 0, 1 });
-	triangles.push_back({ 3, 2, 1 });
+	triangles.push_back({ 1, 0, 2 });
+	triangles.push_back({ 1, 2, 3 });
 
 	return pearl::typesRender::MeshData{points, triangles};
 }
@@ -172,16 +172,16 @@ pearl::typesRender::MeshData utils::GetSpherePoints(float radius, const uint32_t
 			glm::vec3 v1 = points[triangle.f2].point;
 			glm::vec3 v2 = points[triangle.f3].point;
 
-			glm::vec3 v3 = glm::normalize(0.5f * (v0 + v1)) * radius;
-			glm::vec3 v4 = glm::normalize(0.5f * (v1 + v2)) * radius;
-			glm::vec3 v5 = glm::normalize(0.5f * (v2 + v0)) * radius;
+			glm::vec3 v3 = glm::normalize(0.5f * (v0 + v1));
+			glm::vec3 v4 = glm::normalize(0.5f * (v1 + v2));
+			glm::vec3 v5 = glm::normalize(0.5f * (v2 + v0));
 
 			uint32_t v3Index = static_cast<uint32_t>(points.size());
-			points.push_back({glm::vec3{v3}, glm::vec3{v3}, glm::vec2{}});
+			points.push_back({glm::vec3{v3 * radius}, glm::vec3{v3}, glm::vec2{}});
 			uint32_t v4Index = static_cast<uint32_t>(points.size());
-			points.push_back({ glm::vec3{v4}, glm::vec3{v4}, glm::vec2{} });
+			points.push_back({ glm::vec3{v4 * radius}, glm::vec3{v4}, glm::vec2{} });
 			uint32_t v5Index = static_cast<uint32_t>(points.size());
-			points.push_back({ glm::vec3{v5}, glm::vec3{v5}, glm::vec2{} });
+			points.push_back({ glm::vec3{v5 * radius}, glm::vec3{v5}, glm::vec2{} });
 
 			trianglesToAdd.push_back({ triangle.f1, v3Index, v5Index });
 			trianglesToAdd.push_back({ v3Index, triangle.f2, v4Index });

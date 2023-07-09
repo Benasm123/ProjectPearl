@@ -165,9 +165,15 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
 	commandBuffers_[index].Get().reset();
 
-	constexpr vk::ClearValue clearValues[1] = {
-		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
+	const std::array<vk::ClearValue, 2> clearValues = {
+		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
+		vk::ClearDepthStencilValue{1.0f, 0}
 	};
+
+	// constexpr vk::ClearValue clearValues[2] = {
+	// 	vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
+	// 	vk::ClearDepthStencilValue{1.0f, 0}
+	// };
 
 	commandBuffers_[index].Get().begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse));
 
@@ -175,8 +181,8 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 												 .setRenderPass(renderPass_.Get())
 												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
 												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, vk::Extent2D(1000, 1000)))
-												 .setClearValueCount(1)
-												 .setPClearValues(clearValues),
+												 .setClearValueCount(clearValues.size())
+												 .setPClearValues(clearValues.data()),
 												 vk::SubpassContents::eInline);
 
 	commandBuffers_[index].Get().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline_.Get());

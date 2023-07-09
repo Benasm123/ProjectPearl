@@ -148,7 +148,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setRasterizerDiscardEnable(VK_FALSE)
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setCullMode(vk::CullModeFlagBits::eBack)
-		.setFrontFace(vk::FrontFace::eClockwise)
+		.setFrontFace(vk::FrontFace::eCounterClockwise)
 		.setDepthBiasEnable(VK_FALSE)
 		.setDepthBiasConstantFactor(0.0f)
 		.setDepthBiasClamp(0.0f)
@@ -182,7 +182,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setFront(vk::StencilOp::eKeep)
 		.setBack(vk::StencilOp::eKeep)
 		.setMinDepthBounds(0.0f)
-		.setMaxDepthBounds(0.0f);
+		.setMaxDepthBounds(1.0f);
 
 #pragma endregion DepthStencilState
 
