@@ -24,15 +24,15 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 {
 	projectionMatrix_ = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
 	projectionMatrix_[1][1] *= -1;
-
+	
 	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
 
 	const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
-
+	
 	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
-
+	
 	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
-
+	
 	vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
 		.setDescriptorCount(1)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
@@ -46,11 +46,11 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
 
 		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
-
+		
 		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
-
+		
 		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
-
+		
 		uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
 
 		memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
@@ -141,8 +141,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh.indexBuffer, mesh.indexMemory, 0);
 	mesh.indexData = graphicsUnit_.GetLogical().mapMemory(mesh.indexMemory, 0, indexRequirements.size, {});
 	std::memcpy(mesh.indexData, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
-
-	vertexCount_ += mesh.data.points.size();
+	
 	meshes_.push_back(&mesh);
 
 	LOG_TRACE("Drawing mesh with {} triangles", mesh.data.triangles.size());
@@ -166,9 +165,15 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
 	commandBuffers_[index].Get().reset();
 
-	constexpr vk::ClearValue clearValues[1] = {
-		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
+	const std::array<vk::ClearValue, 2> clearValues = {
+		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
+		vk::ClearDepthStencilValue{1.0f, 0}
 	};
+
+	// constexpr vk::ClearValue clearValues[2] = {
+	// 	vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
+	// 	vk::ClearDepthStencilValue{1.0f, 0}
+	// };
 
 	commandBuffers_[index].Get().begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse));
 
@@ -176,8 +181,8 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 												 .setRenderPass(renderPass_.Get())
 												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
 												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, vk::Extent2D(1000, 1000)))
-												 .setClearValueCount(1)
-												 .setPClearValues(clearValues),
+												 .setClearValueCount(clearValues.size())
+												 .setPClearValues(clearValues.data()),
 												 vk::SubpassContents::eInline);
 
 	commandBuffers_[index].Get().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline_.Get());
@@ -222,7 +227,7 @@ bool VulkanRenderer2D::Render()
 
 		meshes_[i]->mvp.mvp = mvp * meshes_[i]->modelMatrix;
 
-		memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
+		// memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
 	}
 
 	vk::PipelineStageFlags pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -254,7 +259,7 @@ bool VulkanRenderer2D::Render()
 
 void VulkanRenderer2D::Build()
 {
-	for ( int i = 0; i < swapchain_.GetImageCount(); i++ )
+	for ( uint32_t i = 0; i < swapchain_.GetImageCount(); i++ )
 	{
 		BuildCommandBufferCommands(i);
 	}
@@ -266,7 +271,7 @@ bool VulkanRenderer2D::Update()
 	return true;
 }
 
-void VulkanRenderer2D::WaitFinishRender()
+void VulkanRenderer2D::WaitFinishRender() const
 {
 	graphicsUnit_.GetLogical().waitIdle();
 }

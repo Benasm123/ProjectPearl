@@ -20,7 +20,7 @@ namespace PEARL_NAMESPACE
 	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		std::vector<vk::ImageView> colourAttachments_;
+		std::vector<vk::ImageView> attachments_;
 
 		Image depthImage_;
 		vk::ImageView depthImageView_;

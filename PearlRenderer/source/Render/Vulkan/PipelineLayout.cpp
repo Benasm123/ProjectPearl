@@ -68,10 +68,11 @@ void PipelineLayout::CreateDescriptorSetLayout()
 }
 
 
+//TODO-> Make descriptor set pools per swapchain image instead of here, only need layout here!
 void PipelineLayout::CreateDescriptorSetPool()
 {
 	const vk::DescriptorPoolSize poolSize = vk::DescriptorPoolSize()
-	                                        .setDescriptorCount(3)
+	                                        .setDescriptorCount(12) // This is currently 4 * the number of images (assumed to be 3), however this should be handled better.
 	                                        .setType(vk::DescriptorType::eUniformBuffer);
 
 	const std::vector<vk::DescriptorPoolSize> poolSizes = { poolSize };
@@ -118,4 +119,6 @@ std::vector<vk::DescriptorSet> PipelineLayout::AllocateDescriptorSet(const uint3
 	                                                      .setDescriptorSetCount(count);
 
 	return graphicsUnit_.GetLogical().allocateDescriptorSets(setAllocateInfo);
+	return{};
 }
+

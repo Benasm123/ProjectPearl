@@ -27,7 +27,7 @@ public:
 	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
 	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
 	virtual bool Update() override;
-	void WaitFinishRender();
+	void WaitFinishRender() const;
 	void Build();
 
 private:

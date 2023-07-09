@@ -147,6 +147,7 @@ void Swapchain::CreateFramebuffers()
 	{
 		delete frameBuffer;
 	}
+	frameBuffers_.clear();
 
 	frameBuffers_.resize(swapchainImageCount_);
 
