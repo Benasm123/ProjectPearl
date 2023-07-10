@@ -270,7 +270,8 @@ bool VulkanRenderer2D::Render()
 	{
 		swapchain_.Recreate();
 		currentRenderIndex_ = 0;
-		projectionMatrix_ = glm::perspective(glm::radians(45.0f), { static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height) }, 0.1f, 1000.0f);
+		// TODO-> Move to camera object and function 
+		projectionMatrix_ = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height), 0.1f, 1000.0f);
 		projectionMatrix_[1][1] *= -1;
 	}
 
