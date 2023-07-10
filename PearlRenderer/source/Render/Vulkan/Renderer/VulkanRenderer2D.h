@@ -1,5 +1,6 @@
 
 #pragma once
+#include "Core/Camera.h"
 #include "Render/Vulkan/RendererInstance.h"
 #include "Render/Generic/Renderer2D.h"
 #include "Render/Vulkan/CommandBuffer.h"
@@ -56,16 +57,11 @@ private:
 	std::vector<vk::DeviceMemory> uniformMemories_;
 	std::vector<void*> uniformMemoryPtrs_;
 
-	glm::vec3 cameraPosition_ = { 0.0f, 0.0f, -1.0f };
-	glm::vec3 origin_ = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 up_ = { 0.0f, 1.0f, 0.0f };
-
-	glm::mat4 projectionMatrix_{};
-	glm::mat4 viewMatrix_{};
-
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	uint32_t vertexCount_ = 0;
 
 	vk::Rect2D scissor_;
 	vk::Viewport viewport_;
+
+	Camera camera_;
 }; 
