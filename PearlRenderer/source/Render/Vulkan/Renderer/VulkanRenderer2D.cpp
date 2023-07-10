@@ -48,8 +48,9 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
 
 		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
-		
-		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(2);
+
+		auto memoryType = graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(memoryType);
 		
 		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
 		
@@ -114,7 +115,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 
 	const vk::MemoryAllocateInfo vertexAllocateInfo = vk::MemoryAllocateInfo()
 	                                                  .setAllocationSize(vertexRequirements.size)
-	                                                  .setMemoryTypeIndex(2);
+	                                                  .setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
 	mesh.vertexMemory = graphicsUnit_.GetLogical().allocateMemory(vertexAllocateInfo);
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh.vertexBuffer, mesh.vertexMemory, 0);
@@ -137,7 +138,7 @@ void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 
 	const vk::MemoryAllocateInfo indexAllocateInfo = vk::MemoryAllocateInfo()
 		.setAllocationSize(indexRequirements.size)
-		.setMemoryTypeIndex(2);
+		.setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
 	mesh.indexMemory = graphicsUnit_.GetLogical().allocateMemory(indexAllocateInfo);
 	graphicsUnit_.GetLogical().bindBufferMemory(mesh.indexBuffer, mesh.indexMemory, 0);
@@ -273,9 +274,8 @@ bool VulkanRenderer2D::Render()
 	{
 		swapchain_.Recreate();
 		currentRenderIndex_ = 0;
-		// TODO-> Move to camera object and function 
-		projectionMatrix_ = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height), 0.1f, 1000.0f);
-		projectionMatrix_[1][1] *= -1;
+		camera_.SetViewArea({ swapchain_.GetSize().width, swapchain_.GetSize().height });
+		camera_.UpdatePerspective();
 	}
 
 	return true;

@@ -55,7 +55,7 @@ void FrameBuffer::CreateDepthResources()
 
 	const vk::MemoryAllocateInfo imageMemoryInfo = vk::MemoryAllocateInfo()
 	                                               .setAllocationSize(requirements.size)
-	                                               .setMemoryTypeIndex(1);
+	                                               .setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eDeviceLocal));
 
 	depthMemory_ = graphicsUnit_.GetLogical().allocateMemory(imageMemoryInfo);
 
@@ -71,7 +71,7 @@ void FrameBuffer::CreateMultiSampleResources()
 
 	const vk::MemoryAllocateInfo imageMemoryInfo = vk::MemoryAllocateInfo()
 		.setAllocationSize(requirements.size)
-		.setMemoryTypeIndex(1);
+		.setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eDeviceLocal));
 
 	multiSampleMemory_ = graphicsUnit_.GetLogical().allocateMemory(imageMemoryInfo);
 

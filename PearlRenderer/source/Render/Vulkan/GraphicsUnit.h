@@ -19,6 +19,7 @@ namespace PEARL_NAMESPACE
 		std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(const RenderSurface& surface) const;
 		vk::SurfaceFormatKHR GetBestSurfaceFormat(const RenderSurface& surface) const;
 		std::vector<vk::PresentModeKHR> GetSurfacePresentModes(const RenderSurface& surface) const;
+		uint32_t GetMemoryIndexOfType(vk::MemoryPropertyFlags memoryProperty) const;
 
 		[[nodiscard]] const vk::PhysicalDevice& GetPhysical() const { return graphicsUnit_; }
 		[[nodiscard]] const vk::Device& GetLogical() const { return logicalUnit_; }

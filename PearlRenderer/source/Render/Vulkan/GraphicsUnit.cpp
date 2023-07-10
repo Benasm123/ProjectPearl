@@ -144,6 +144,23 @@ std::vector<vk::PresentModeKHR> GraphicsUnit::GetSurfacePresentModes(const Rende
 }
 
 
+uint32_t GraphicsUnit::GetMemoryIndexOfType(const vk::MemoryPropertyFlags memoryProperty) const
+{
+	const vk::PhysicalDeviceMemoryProperties props = graphicsUnit_.getMemoryProperties();
+	for (uint32_t i = 0; i < props.memoryTypeCount; i++)
+	{
+		if ((props.memoryTypes[i].propertyFlags & memoryProperty) == memoryProperty )
+		{
+			return i;
+		}
+	}
+
+	LOG_ERROR("Failed to find memory with property");
+
+	return -1;
+}
+
+
 vk::SwapchainKHR GraphicsUnit::CreateSwapchain(const vk::SwapchainCreateInfoKHR& createInfo) const
 {
 	return logicalUnit_.createSwapchainKHR(createInfo);
