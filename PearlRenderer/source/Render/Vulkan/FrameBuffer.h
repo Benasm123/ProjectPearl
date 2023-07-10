@@ -16,6 +16,7 @@ namespace PEARL_NAMESPACE
 
 	private:
 		void CreateDepthResources();
+		void CreateMultiSampleResources();
 
 	private:
 		const GraphicsUnit& graphicsUnit_;
@@ -25,6 +26,10 @@ namespace PEARL_NAMESPACE
 		Image depthImage_;
 		vk::ImageView depthImageView_;
 		vk::DeviceMemory depthMemory_;
+
+		Image multiSampleImage_;
+		vk::ImageView multiSampleImageView_;
+		vk::DeviceMemory multiSampleMemory_;
 
 		vk::Framebuffer framebuffer_;
 	};

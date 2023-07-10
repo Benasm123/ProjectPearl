@@ -22,7 +22,7 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	, graphicsPipeline_{graphicsUnit_, renderSurface_, renderPass_, graphicsPipelineLayout_}
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
 {
-	projectionMatrix_ = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 1000.0f);
+	projectionMatrix_ = glm::perspective(glm::radians(45.0f), {static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height)}, 0.1f, 1000.0f);
 	projectionMatrix_[1][1] *= -1;
 	
 	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
@@ -165,22 +165,18 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
 	commandBuffers_[index].Get().reset();
 
-	const std::array<vk::ClearValue, 2> clearValues = {
+	const std::array<vk::ClearValue, 3> clearValues = {
 		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
-		vk::ClearDepthStencilValue{1.0f, 0}
+		vk::ClearDepthStencilValue{1.0f, 0},
+		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
 	};
-
-	// constexpr vk::ClearValue clearValues[2] = {
-	// 	vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
-	// 	vk::ClearDepthStencilValue{1.0f, 0}
-	// };
 
 	commandBuffers_[index].Get().begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse));
 
 	commandBuffers_[index].Get().beginRenderPass(vk::RenderPassBeginInfo()
 												 .setRenderPass(renderPass_.Get())
 												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
-												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, vk::Extent2D(1000, 1000)))
+												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, swapchain_.GetSize()))
 												 .setClearValueCount(clearValues.size())
 												 .setPClearValues(clearValues.data()),
 												 vk::SubpassContents::eInline);
@@ -188,6 +184,25 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 	commandBuffers_[index].Get().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline_.Get());
 
 	commandBuffers_[index].Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
+
+	vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
+
+	viewport_.setWidth(static_cast<float>(renderExtent.width))
+		.setHeight(static_cast<float>(renderExtent.height))
+		.setX(0)
+		.setY(0)
+		.setMinDepth(0.0f)
+		.setMaxDepth(1.0f);
+
+	const std::vector<vk::Viewport> viewports = { viewport_ };
+
+	scissor_.setExtent(renderExtent)
+		.setOffset({ 0, 0 });
+
+	const std::vector<vk::Rect2D> scissors = { scissor_ };
+
+	commandBuffers_[index].Get().setScissor(0, scissors);
+	commandBuffers_[index].Get().setViewport(0, viewports);
 
 	for (int i = 0; i < meshes_.size(); i++)
 	{
@@ -226,8 +241,6 @@ bool VulkanRenderer2D::Render()
 		meshes_[i]->modelMatrix = glm::translate(glm::mat4(1.0f), meshes_[i]->position);
 
 		meshes_[i]->mvp.mvp = mvp * meshes_[i]->modelMatrix;
-
-		// memcpy(uniformMemoryPtrs_[currentRenderIndex_], &mvp, sizeof(glm::mat4));
 	}
 
 	vk::PipelineStageFlags pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -252,6 +265,14 @@ bool VulkanRenderer2D::Render()
 	result = graphicsUnit_.GetGraphicsQueue().presentKHR(&presentInfo);
 
 	currentRenderIndex_ = (currentRenderIndex_ + 1) % 3;
+
+	if ( result != vk::Result::eSuccess )
+	{
+		swapchain_.Recreate();
+		currentRenderIndex_ = 0;
+		projectionMatrix_ = glm::perspective(glm::radians(45.0f), { static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height) }, 0.1f, 1000.0f);
+		projectionMatrix_[1][1] *= -1;
+	}
 
 	return true;
 }

@@ -65,4 +65,7 @@ private:
 
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	uint32_t vertexCount_ = 0;
+
+	vk::Rect2D scissor_;
+	vk::Viewport viewport_;
 }; 
