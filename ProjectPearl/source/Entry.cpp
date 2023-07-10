@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 {
 	spdlog::set_level(spdlog::level::trace);
 
-	pearl::Window window("Pearl Engine", 1000, 1000);
+	pearl::Window window("Pearl Engine", 1200, 1000);
 	auto renderer = VulkanRenderer2D(window);
 
 	pearl::typesRender::Mesh mesh;
@@ -22,12 +22,18 @@ int main(int argc, char* argv[])
 	mesh.position.y = -10;
 	
 	pearl::typesRender::Mesh mesh2;
-	mesh2.data = utils::GetSpherePoints(1.0f, 3);
+	mesh2.data = utils::GetSpherePoints(10.0f, 5);
 	mesh2.position.z = 40;
 	mesh2.position.y = -10;
 
+	pearl::typesRender::Mesh mesh3;
+	mesh3.data = utils::GetSpherePoints(3.0f, 3);
+	mesh3.position.z = 40;
+	mesh3.position.y = 0.0;
+
 	renderer.DrawMesh(mesh);
 	renderer.DrawMesh(mesh2);
+	renderer.DrawMesh(mesh3);
 	
 	float vel = 0.0;
 
@@ -40,12 +46,15 @@ int main(int argc, char* argv[])
 		double deltaTime = static_cast<double>((std::chrono::duration_cast<std::chrono::microseconds>(currentTime - oldTime)).count()) / 1e+6;
 		oldTime = currentTime;
 
+		mesh3.position.y += deltaTime * 0.1f;
+
 		running = window.Update();
 		renderer.Update();
 	}
 
 	renderer.DestroyMesh(mesh);
 	renderer.DestroyMesh(mesh2);
+	renderer.DestroyMesh(mesh3);
 
 	return 0;
 }

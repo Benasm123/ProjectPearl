@@ -60,6 +60,9 @@ uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
 
 void Swapchain::Recreate()
 {
+	graphicsUnit_.GetLogical().waitIdle();
+
+	GetSwapchainSettings();
 	CreateSwapchain();
 	GetSwapchainImages();
 	CreateFramebuffers();
@@ -72,13 +75,15 @@ void Swapchain::CreateSwapchain()
 
 	const auto surfaceCapabilities = graphicsUnit_.GetSurfaceCapabilities(renderSurface_);
 
+	size_ = surfaceCapabilities.currentExtent;
+
 	const vk::SwapchainCreateInfoKHR swapchainInfo = vk::SwapchainCreateInfoKHR()
 		.setFlags({})
 		.setClipped(VK_TRUE)
 		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
 		.setMinImageCount(swapchainImageCount_)
 		.setImageFormat(swapchainImageFormat_)
-		.setImageExtent({ surfaceCapabilities.currentExtent })
+		.setImageExtent({ size_ })
 		.setImageArrayLayers(1)
 		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
 		.setImageSharingMode(vk::SharingMode::eExclusive) // TODO -> Not sure if need this for concurrency! ---> I assume if compute queue is separate and it needs swapchain it will need concurrency?
@@ -161,6 +166,21 @@ void Swapchain::CreateFramebuffers()
 
 void Swapchain::CreateSynchronization()
 {
+	for (const auto semaphore : imageAcquiredSemaphore_)
+	{
+		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+	}
+
+	for (const auto semaphore : drawCompleteSemaphore_ )
+	{
+		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+	}
+
+	for ( const auto fence : fences_ )
+	{
+		graphicsUnit_.GetLogical().destroyFence(fence);
+	}
+
 	constexpr vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
 	constexpr vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled);
 

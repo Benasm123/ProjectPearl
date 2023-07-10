@@ -9,7 +9,7 @@ namespace PEARL_NAMESPACE
 	{
 	public:
 		Image(const GraphicsUnit& graphicsUnit, vk::Image image, vk::Format format, vk::Extent2D size, bool destroy=true);
-		Image(const GraphicsUnit& graphicsUnit, vk::Format format, vk::Extent2D size, vk::ImageLayout initialLayout, vk::ImageUsageFlagBits usage, bool destroy=true);
+		Image(const GraphicsUnit& graphicsUnit, vk::Format format, vk::Extent2D size, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, bool destroy=true);
 		~Image();
 
 		[[nodiscard]] vk::Image Get() const { return image_; }

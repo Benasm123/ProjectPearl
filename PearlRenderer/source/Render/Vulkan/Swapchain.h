@@ -25,6 +25,8 @@ namespace PEARL_NAMESPACE
 		[[nodiscard]] std::vector<vk::Semaphore>& GetDrawCompletedSemaphores() { return drawCompleteSemaphore_; }
 		[[nodiscard]] std::vector<vk::Fence>& GetFences() { return fences_; }
 
+		[[nodiscard]] vk::Extent2D GetSize() const { return size_; }
+
 		void Recreate();
 
 	private:
@@ -53,6 +55,9 @@ namespace PEARL_NAMESPACE
 		vk::Format swapchainImageFormat_{};
 		vk::SurfaceTransformFlagBitsKHR swapchainTransform_{};
 		vk::PresentModeKHR swapchainPresentMode_{};
+
+
+		vk::Extent2D size_;
 	};
 }
 

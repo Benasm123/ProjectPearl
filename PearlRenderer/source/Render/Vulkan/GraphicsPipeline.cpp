@@ -161,7 +161,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::PipelineMultisampleStateCreateInfo multisampleInfo = vk::PipelineMultisampleStateCreateInfo()
 		.setFlags({})
-		.setRasterizationSamples(vk::SampleCountFlagBits::e1)
+		.setRasterizationSamples(vk::SampleCountFlagBits::e8)
 		.setSampleShadingEnable(VK_FALSE)
 		.setMinSampleShading(1.0f)
 		.setPSampleMask(nullptr)
@@ -212,7 +212,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 #pragma region DynamicStates
 
-	std::vector<vk::DynamicState> dynamicStates = {};
+	std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eScissor, vk::DynamicState::eViewport};
 
 	vk::PipelineDynamicStateCreateInfo dynamicInfo = vk::PipelineDynamicStateCreateInfo()
 		.setFlags({})

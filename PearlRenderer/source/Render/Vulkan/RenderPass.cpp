@@ -21,6 +21,29 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 {
 	std::vector<vk::AttachmentDescription> attachmentDescriptions;
 
+	const vk::AttachmentDescription multiSampleAttachment = vk::AttachmentDescription()
+		.setFormat(graphicsUnit_.GetBestSurfaceFormat(renderSurface).format)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eStore)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal)
+		.setSamples(vk::SampleCountFlagBits::e8);
+
+	attachmentDescriptions.push_back(multiSampleAttachment);
+
+	constexpr vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
+		.setFlags({})
+		.setFormat(vk::Format::eD32Sfloat) //Should get this from the depth image not hard code
+		.setSamples(vk::SampleCountFlagBits::e8)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+	attachmentDescriptions.push_back(depthAttachment);
+
 	const vk::AttachmentDescription colourAttachment = vk::AttachmentDescription()
 	                                             .setFlags({})
 	                                             .setFormat(graphicsUnit_.GetBestSurfaceFormat(renderSurface).format)
@@ -33,19 +56,6 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 	                                             .setSamples(vk::SampleCountFlagBits::e1); // TODO-> SAMPLE COUNT NEEDS TO BE SET SOMEWHERE AND PASSED EVERYWHERE ITS NEEDED TO KEEP THE SAME!
 
 	attachmentDescriptions.push_back(colourAttachment);
-
-	constexpr vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
-		.setFlags({})
-		.setFormat(vk::Format::eD32Sfloat) //Should get this from the depth image not hard code
-		.setSamples(vk::SampleCountFlagBits::e1)
-		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
-		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-	attachmentDescriptions.push_back(depthAttachment);
 
 	std::vector<vk::SubpassDependency> dependencies;
 
@@ -61,23 +71,29 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 
 	std::vector<vk::SubpassDescription> subpassDescriptions;
 
+	constexpr vk::AttachmentReference multiSampleReference = vk::AttachmentReference()
+		.setAttachment(0)
+		.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
 	constexpr vk::AttachmentReference colourReference = vk::AttachmentReference()
-	                                                .setAttachment(0)
+	                                                .setAttachment(2)
 	                                                .setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+	std::vector<vk::AttachmentReference> references = { multiSampleReference };
 
 	constexpr vk::AttachmentReference depthReference = vk::AttachmentReference()
 		.setAttachment(1)
 		.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-	constexpr vk::SubpassDescription subpass = vk::SubpassDescription()
+	const vk::SubpassDescription subpass = vk::SubpassDescription()
 	                                       .setFlags({})
 	                                       .setColorAttachmentCount(1)
-	                                       .setPColorAttachments(&colourReference)
+	                                       .setPColorAttachments(references.data())
 	                                       .setInputAttachmentCount(0)
 	                                       .setPInputAttachments(nullptr)
 	                                       .setPDepthStencilAttachment(&depthReference)
 	                                       .setPPreserveAttachments(nullptr)
-	                                       .setPResolveAttachments(nullptr)
+	                                       .setPResolveAttachments(&colourReference)
 	                                       .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
 
 	subpassDescriptions.push_back(subpass);
