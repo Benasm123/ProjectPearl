@@ -21,14 +21,16 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	, graphicsPipelineLayout_{graphicsUnit_}
 	, graphicsPipeline_{graphicsUnit_, renderSurface_, renderPass_, graphicsPipelineLayout_}
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
+	, camera_{45.0f, {swapchain_.GetSize().width, swapchain_.GetSize().height}}
 {
-	projectionMatrix_ = glm::perspective(glm::radians(45.0f), {static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height)}, 0.1f, 1000.0f);
-	projectionMatrix_[1][1] *= -1;
-	
-	viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
+	// projectionMatrix_ = glm::perspective(glm::radians(45.0f), {static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height)}, 0.1f, 1000.0f);
+	// projectionMatrix_[1][1] *= -1;
+	//
+	// viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
 
-	const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
-	
+	// const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+	const glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
+
 	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
 	
 	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
@@ -39,7 +41,7 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 		.setPBufferInfo(&descriptorBufferInfo);
 
 	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
-	for (int i = 0 ; i < swapchain_.GetImageCount(); i++)
+	for (uint32_t i = 0 ; i < swapchain_.GetImageCount(); i++)
 	{
 		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
 
@@ -177,7 +179,7 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 												 .setRenderPass(renderPass_.Get())
 												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
 												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, swapchain_.GetSize()))
-												 .setClearValueCount(clearValues.size())
+												 .setClearValueCount((uint32_t)clearValues.size())
 												 .setPClearValues(clearValues.data()),
 												 vk::SubpassContents::eInline);
 
@@ -213,7 +215,7 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 
 		commandBuffers_[index].Get().bindIndexBuffer(meshes_[i]->indexBuffer, 0, vk::IndexType::eUint32);
 
-		commandBuffers_[index].Get().drawIndexed(meshes_[i]->data.triangles.size() * 3, 1, 0, 0, 0);
+		commandBuffers_[index].Get().drawIndexed((uint32_t)(meshes_[i]->data.triangles.size() * 3ull), 1, 0, 0, 0);
 
 	}
 
@@ -236,7 +238,8 @@ bool VulkanRenderer2D::Render()
 
 	for (int i = 0; i < meshes_.size(); i++)
 	{
-		glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+		// glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
+		glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
 		
 		meshes_[i]->modelMatrix = glm::translate(glm::mat4(1.0f), meshes_[i]->position);
 
