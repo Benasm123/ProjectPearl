@@ -188,7 +188,7 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 
 	commandBuffers_[index].Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
 
-	vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
+	const vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
 
 	viewport_.setWidth(static_cast<float>(renderExtent.width))
 		.setHeight(static_cast<float>(renderExtent.height))
@@ -207,16 +207,16 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 	commandBuffers_[index].Get().setScissor(0, scissors);
 	commandBuffers_[index].Get().setViewport(0, viewports);
 
-	for (int i = 0; i < meshes_.size(); i++)
+	for (auto& mesh : meshes_)
 	{
-		commandBuffers_[index].Get().pushConstants(graphicsPipelineLayout_.Get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(pearl::typesRender::PushConstant), &meshes_[i]->mvp);
+		commandBuffers_[index].Get().pushConstants(graphicsPipelineLayout_.Get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(pearl::typesRender::PushConstant), &mesh->mvp);
 
 		constexpr vk::DeviceSize offset[] = { 0 };
-		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &meshes_[i]->vertexBuffer, offset);
+		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &mesh->vertexBuffer, offset);
 
-		commandBuffers_[index].Get().bindIndexBuffer(meshes_[i]->indexBuffer, 0, vk::IndexType::eUint32);
+		commandBuffers_[index].Get().bindIndexBuffer(mesh->indexBuffer, 0, vk::IndexType::eUint32);
 
-		commandBuffers_[index].Get().drawIndexed((uint32_t)(meshes_[i]->data.triangles.size() * 3ull), 1, 0, 0, 0);
+		commandBuffers_[index].Get().drawIndexed((uint32_t)(mesh->data.triangles.size() * 3ull), 1, 0, 0, 0);
 
 	}
 
