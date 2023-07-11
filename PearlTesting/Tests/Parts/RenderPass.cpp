@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "../../Pearl/source/Render/Vulkan/RendererInstance.h"
-#include "../../Pearl/source/Render/Vulkan/GraphicsUnit.h"
-#include "../../Pearl/source/Render/Vulkan/RenderPass.h"
+#include "../../PearlRenderer/source/Render/Vulkan/RendererInstance.h"
+#include "../../PearlRenderer/source/Render/Vulkan/GraphicsUnit.h"
+#include "../../PearlRenderer/source/Render/Vulkan/RenderPass.h"
 
 using namespace pearl;
 

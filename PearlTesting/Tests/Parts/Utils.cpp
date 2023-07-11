@@ -1,6 +1,6 @@
 // ReSharper disable All
 #include "pch.h"
-#include "../../Pearl/source/PearlCore.h"
+#include "../../PearlRenderer/source/PearlCore.h"
 
 TEST(Utils, ShaderRead)
 {
