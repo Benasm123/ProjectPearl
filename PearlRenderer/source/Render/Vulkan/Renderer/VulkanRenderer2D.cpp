@@ -23,12 +23,6 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
 	, camera_{45.0f, {swapchain_.GetSize().width, swapchain_.GetSize().height}}
 {
-	// projectionMatrix_ = glm::perspective(glm::radians(45.0f), {static_cast<float>(swapchain_.GetSize().width) / static_cast<float>(swapchain_.GetSize().height)}, 0.1f, 1000.0f);
-	// projectionMatrix_[1][1] *= -1;
-	//
-	// viewMatrix_ = glm::lookAt(cameraPosition_, origin_, up_);
-
-	// const glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
 	const glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
 
 	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
