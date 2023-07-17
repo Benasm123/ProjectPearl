@@ -38,6 +38,10 @@ namespace PEARL_NAMESPACE
 
 		[[nodiscard]] vk::Queue GetGraphicsQueue();
 
+		[[nodiscard]] vk::Buffer CreateBuffer(size_t size, vk::BufferUsageFlags usageFlags, vk::SharingMode sharingMode=vk::SharingMode::eExclusive);
+		[[nodiscard]] vk::DeviceMemory AllocateMemory(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags memoryFlags);
+		[[nodiscard]] void* BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize offset=0, vk::DeviceSize size=VK_WHOLE_SIZE);
+		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, vk::BufferUsageFlags usage);
 	private:
 		std::string name_;
 

@@ -52,14 +52,9 @@ private:
 
 	uint32_t currentRenderIndex_ = 0;
 
-	// TEST
-	std::vector<vk::Buffer> uniformBuffers_;
-	std::vector<vk::DeviceMemory> uniformMemories_;
-	std::vector<void*> uniformMemoryPtrs_;
-
 	std::vector<pearl::typesRender::Mesh*> meshes_;
-	uint32_t vertexCount_ = 0;
-
+	
+	//TODO -- Consider moving this
 	vk::Rect2D scissor_;
 	vk::Viewport viewport_;
 

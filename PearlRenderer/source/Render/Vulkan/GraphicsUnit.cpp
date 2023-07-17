@@ -200,6 +200,41 @@ vk::Queue GraphicsUnit::GetGraphicsQueue()
 	return graphicsQueues_[graphicsQueuePos_];
 }
 
+vk::Buffer GraphicsUnit::CreateBuffer(size_t size, vk::BufferUsageFlags usageFlags, vk::SharingMode sharingMode)
+{
+	const vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
+		.setFlags({})
+		.setSize(size)
+		.setSharingMode(sharingMode)
+		.setUsage(usageFlags);
+
+	return logicalUnit_.createBuffer(bufferInfo);
+}
+
+vk::DeviceMemory GraphicsUnit::AllocateMemory(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags memoryFlags)
+{
+	const vk::MemoryAllocateInfo allocationInfo = vk::MemoryAllocateInfo()
+		.setAllocationSize(requirements.size)
+		.setMemoryTypeIndex(GetMemoryIndexOfType(memoryFlags));
+
+	return logicalUnit_.allocateMemory(allocationInfo);
+}
+
+void* GraphicsUnit::BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize offset, vk::DeviceSize size)
+{
+	logicalUnit_.bindBufferMemory(buffer, memory, 0);
+	return logicalUnit_.mapMemory(memory, offset, size, {});
+}
+
+PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(size_t size, vk::BufferUsageFlags usage) 
+{
+	PEARL_NAMESPACE::typesRender::BufferResource bufferResource;
+	bufferResource.buffer = CreateBuffer(size, usage);
+	bufferResource.memory = AllocateMemory(logicalUnit_.getBufferMemoryRequirements(bufferResource.buffer),
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+	bufferResource.dataPtr = BindAndMapBufferMemory(bufferResource.buffer, bufferResource.memory);
+	return bufferResource;
+}
 
 void GraphicsUnit::DestroySwapchain(const vk::SwapchainKHR swapchainToDestroy) const
 {

@@ -23,60 +23,23 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
 	, camera_{45.0f, {swapchain_.GetSize().width, swapchain_.GetSize().height}}
 {
-	const glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
-
-	auto descriptorBufferInfo = vk::DescriptorBufferInfo().setOffset(0).setRange(sizeof(glm::mat4));
-	
-	constexpr auto bufferInfo = vk::BufferCreateInfo().setSize(sizeof(glm::mat4)).setUsage(vk::BufferUsageFlagBits::eUniformBuffer);
-	
-	vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
-		.setDescriptorCount(1)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setPBufferInfo(&descriptorBufferInfo);
-
 	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
 	for (uint32_t i = 0 ; i < swapchain_.GetImageCount(); i++)
 	{
 		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
-
-		uniformBuffers_.push_back(graphicsUnit_.GetLogical().createBuffer(bufferInfo, nullptr));
-
-		const vk::MemoryRequirements memReq = graphicsUnit_.GetLogical().getBufferMemoryRequirements(uniformBuffers_[i]);
-
-		auto memoryType = graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-		vk::MemoryAllocateInfo allocateInfo = vk::MemoryAllocateInfo().setAllocationSize(memReq.size).setMemoryTypeIndex(memoryType);
-		
-		uniformMemories_.push_back(graphicsUnit_.GetLogical().allocateMemory(allocateInfo));
-		
-		uniformMemoryPtrs_.push_back(graphicsUnit_.GetLogical().mapMemory(uniformMemories_[i], 0, VK_WHOLE_SIZE, vk::MemoryMapFlags()));
-
-		memcpy(uniformMemoryPtrs_[i], &mvp, sizeof(glm::mat4));
-
-		graphicsUnit_.GetLogical().bindBufferMemory(uniformBuffers_[i], uniformMemories_[i], 0);
-
-		descriptorBufferInfo.setBuffer(uniformBuffers_[i]);
-		write.setDstSet(descriptorSets_[i]);
-		graphicsUnit_.GetLogical().updateDescriptorSets(write, {});
 	}
 }
 
 VulkanRenderer2D::~VulkanRenderer2D()
 {
 	WaitFinishRender();
-
-	for (const auto& memory : uniformMemories_)
-	{
-		graphicsUnit_.GetLogical().unmapMemory(memory);
-		graphicsUnit_.GetLogical().freeMemory(memory);
-	}
-
-	for (const auto& buffer : uniformBuffers_)
-	{
-		graphicsUnit_.GetLogical().destroyBuffer(buffer);
-	}
 };
 
-
+///
+/// Draw a line
+/// @param start The point in the world space the drawn line will start.
+/// @param end The point in the world space the drawn line will end.
+///
 void VulkanRenderer2D::DrawLine(PEARL_NAMESPACE::types2D::Point2D start, PEARL_NAMESPACE::types2D::Point2D end)
 {
 }
@@ -93,52 +56,21 @@ void VulkanRenderer2D::DrawRects(std::vector<PEARL_NAMESPACE::types2D::Rect2D> r
 {
 }
 
-
+///
+/// Prepare a mesh to be rendered, adding it to list of meshes and creating its vertex and index buffers.
+/// @param mesh The mesh which is to rendered.
+///
 void VulkanRenderer2D::DrawMesh(pearl::typesRender::Mesh& mesh)
 {
-	// Make Graphics Unit functions for getting memory buffers and memory.
-	const vk::BufferCreateInfo vertexBufferInfo = vk::BufferCreateInfo()
-	                                              .setFlags({})
-	                                              .setSize(mesh.data.points.size() * sizeof(pearl::typesRender::VertexInput2D))
-	                                              .setSharingMode(vk::SharingMode::eExclusive)
-	                                              .setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
-
-	mesh.vertexBuffer = graphicsUnit_.GetLogical().createBuffer(vertexBufferInfo);
-
-	const vk::MemoryRequirements vertexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh.vertexBuffer);
-
-	const vk::MemoryAllocateInfo vertexAllocateInfo = vk::MemoryAllocateInfo()
-	                                                  .setAllocationSize(vertexRequirements.size)
-	                                                  .setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
-
-	mesh.vertexMemory = graphicsUnit_.GetLogical().allocateMemory(vertexAllocateInfo);
-	graphicsUnit_.GetLogical().bindBufferMemory(mesh.vertexBuffer, mesh.vertexMemory, 0);
-	mesh.vertexData = graphicsUnit_.GetLogical().mapMemory(mesh.vertexMemory, 0, vertexRequirements.size, {});
-	std::memcpy(mesh.vertexData, mesh.data.points.data(), mesh.data.points.size() * sizeof(mesh.data.points[0]));
+	// TODO -- this should be in a mesh class. should also look into abstracting all vk types out to reduce dependancy.
+	// turn meshes into handle that will then have a look up for all needed renderer types?
+	mesh.vertexResource = graphicsUnit_.CreateBufferResource(mesh.data.points.size() * sizeof(mesh.data.points[0]), vk::BufferUsageFlagBits::eVertexBuffer);
+	std::memcpy(mesh.vertexResource.dataPtr, mesh.data.points.data(), mesh.data.points.size() * sizeof(mesh.data.points[0]));
 
 
-	//
-
-
-	const vk::BufferCreateInfo indexBufferInfo = vk::BufferCreateInfo()
-		.setFlags({})
-		.setSize(mesh.data.triangles.size() * sizeof(pearl::typesRender::Triangle))
-		.setSharingMode(vk::SharingMode::eExclusive)
-		.setUsage(vk::BufferUsageFlagBits::eIndexBuffer);
-
-	mesh.indexBuffer = graphicsUnit_.GetLogical().createBuffer(indexBufferInfo);
-
-	const vk::MemoryRequirements indexRequirements = graphicsUnit_.GetLogical().getBufferMemoryRequirements(mesh.indexBuffer);
-
-	const vk::MemoryAllocateInfo indexAllocateInfo = vk::MemoryAllocateInfo()
-		.setAllocationSize(indexRequirements.size)
-		.setMemoryTypeIndex(graphicsUnit_.GetMemoryIndexOfType(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
-
-	mesh.indexMemory = graphicsUnit_.GetLogical().allocateMemory(indexAllocateInfo);
-	graphicsUnit_.GetLogical().bindBufferMemory(mesh.indexBuffer, mesh.indexMemory, 0);
-	mesh.indexData = graphicsUnit_.GetLogical().mapMemory(mesh.indexMemory, 0, indexRequirements.size, {});
-	std::memcpy(mesh.indexData, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
-	
+	mesh.indexResource = graphicsUnit_.CreateBufferResource(mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]), vk::BufferUsageFlagBits::eIndexBuffer);
+	std::memcpy(mesh.indexResource.dataPtr, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
+			
 	meshes_.push_back(&mesh);
 
 	LOG_TRACE("Drawing mesh with {} triangles", mesh.data.triangles.size());
@@ -148,13 +80,13 @@ void VulkanRenderer2D::DestroyMesh(const pearl::typesRender::Mesh& mesh)
 {
 	WaitFinishRender();
 
-	graphicsUnit_.GetLogical().unmapMemory(mesh.vertexMemory);
-	graphicsUnit_.GetLogical().freeMemory(mesh.vertexMemory);
-	graphicsUnit_.GetLogical().destroyBuffer(mesh.vertexBuffer);
+	graphicsUnit_.GetLogical().unmapMemory(mesh.vertexResource.memory);
+	graphicsUnit_.GetLogical().freeMemory(mesh.vertexResource.memory);
+	graphicsUnit_.GetLogical().destroyBuffer(mesh.vertexResource.buffer);
 
-	graphicsUnit_.GetLogical().unmapMemory(mesh.indexMemory);
-	graphicsUnit_.GetLogical().freeMemory(mesh.indexMemory);
-	graphicsUnit_.GetLogical().destroyBuffer(mesh.indexBuffer);
+	graphicsUnit_.GetLogical().unmapMemory(mesh.indexResource.memory);
+	graphicsUnit_.GetLogical().freeMemory(mesh.indexResource.memory);
+	graphicsUnit_.GetLogical().destroyBuffer(mesh.indexResource.buffer);
 }
 
 
@@ -206,9 +138,9 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 		commandBuffers_[index].Get().pushConstants(graphicsPipelineLayout_.Get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(pearl::typesRender::PushConstant), &mesh->mvp);
 
 		constexpr vk::DeviceSize offset[] = { 0 };
-		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &mesh->vertexBuffer, offset);
+		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &mesh->vertexResource.buffer, offset);
 
-		commandBuffers_[index].Get().bindIndexBuffer(mesh->indexBuffer, 0, vk::IndexType::eUint32);
+		commandBuffers_[index].Get().bindIndexBuffer(mesh->indexResource.buffer, 0, vk::IndexType::eUint32);
 
 		commandBuffers_[index].Get().drawIndexed((uint32_t)(mesh->data.triangles.size() * 3ull), 1, 0, 0, 0);
 

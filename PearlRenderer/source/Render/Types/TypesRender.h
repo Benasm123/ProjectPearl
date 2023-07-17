@@ -26,18 +26,20 @@ namespace PEARL_NAMESPACE::typesRender
 		std::vector<VertexInput2D> points;
 		std::vector<Triangle> triangles;
 	};
+	
+	struct BufferResource
+	{
+		vk::Buffer buffer;
+		vk::DeviceMemory memory;
+		void* dataPtr;
+	};
 
 	struct Mesh
 	{
 		MeshData data;
 
-		vk::Buffer vertexBuffer;
-		vk::DeviceMemory vertexMemory;
-		void* vertexData;
-
-		vk::Buffer indexBuffer;
-		vk::DeviceMemory indexMemory;
-		void* indexData;
+		BufferResource vertexResource;
+		BufferResource indexResource;
 
 		glm::mat4 modelMatrix = glm::mat4(1.0f);
 
