@@ -8,6 +8,7 @@ namespace PEARL_NAMESPACE
 	class RenderPass;
 	class FrameBuffer;
 	class GraphicsPipeline;
+	class PipelineLayout;
 
 	class CommandBuffer
 	{
@@ -25,6 +26,10 @@ namespace PEARL_NAMESPACE
 
 		void SetScissor(const vk::Rect2D& scissor);
 		void SetViewport(const vk::Viewport& viewport);
+
+		void PushConstants(const PipelineLayout& pipelineLayout, const pearl::typesRender::PushConstantInfo& pushConstantInfo);
+
+		void DrawIndexed(const typesRender::Mesh& mesh);
 
 		[[nodiscard]] const vk::CommandBuffer& Get() const { return commandBuffer_; }
 

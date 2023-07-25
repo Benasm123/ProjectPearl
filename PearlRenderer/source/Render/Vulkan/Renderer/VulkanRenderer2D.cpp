@@ -97,36 +97,33 @@ void VulkanRenderer2D::DestroyMesh(const pearl::typesRender::Mesh& mesh)
 
 void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
-	commandBuffers_[index].Get().reset();
+	pearl::CommandBuffer currentBuffer = commandBuffers_[index];
 
-	commandBuffers_[index].Begin();
-	commandBuffers_[index].BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], scissor_);
+	currentBuffer.Get().reset();
 
-	commandBuffers_[index].BindPipeline(graphicsPipeline_);
+	currentBuffer.Begin();
+	currentBuffer.BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], scissor_);
+
+	currentBuffer.BindPipeline(graphicsPipeline_);
 
 
 	// TODO -> Create wrapper class for descriptor sets, and make this into a CommandBuffer function to not use vulkan.
-	commandBuffers_[index].Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
+	currentBuffer.Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
 
 	// TODO -> Can add scissor and viewport to renderSurface class and allow commandBuffers to access these with a SetRenderSurface method.
-	commandBuffers_[index].SetScissor(scissor_);
-	commandBuffers_[index].SetViewport(viewport_);
+	currentBuffer.SetScissor(scissor_);
+	currentBuffer.SetViewport(viewport_);
 
 	for (auto& mesh : meshes_)
 	{
-		commandBuffers_[index].Get().pushConstants(graphicsPipelineLayout_.Get(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(pearl::typesRender::PushConstant), &mesh->mvp);
+		currentBuffer.PushConstants(graphicsPipelineLayout_, pearl::typesRender::PushConstantInfo{vk::ShaderStageFlagBits::eVertex, mesh->mvp});
 
-		constexpr vk::DeviceSize offset[] = { 0 };
-		commandBuffers_[index].Get().bindVertexBuffers(0, 1, &mesh->vertexResource.buffer, offset);
-
-		commandBuffers_[index].Get().bindIndexBuffer(mesh->indexResource.buffer, 0, vk::IndexType::eUint32);
-
-		commandBuffers_[index].Get().drawIndexed((uint32_t)(mesh->data.triangles.size() * 3ull), 1, 0, 0, 0);
+		currentBuffer.DrawIndexed(*mesh);
 
 	}
 
-	commandBuffers_[index].EndRenderPass();
-	commandBuffers_[index].End();
+	currentBuffer.EndRenderPass();
+	currentBuffer.End();
 }
 
 
@@ -141,14 +138,13 @@ bool VulkanRenderer2D::Render()
 
 	std::vector<vk::SubmitInfo> submitInfos = {};
 
-	for (int i = 0; i < meshes_.size(); i++)
+	for (pearl::typesRender::Mesh* mesh : meshes_)
 	{
-		// glm::mat4 mvp = projectionMatrix_ * viewMatrix_;
 		glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
 		
-		meshes_[i]->modelMatrix = glm::translate(glm::mat4(1.0f), meshes_[i]->position);
+		mesh->modelMatrix = glm::translate(glm::mat4(1.0f), mesh->position);
 
-		meshes_[i]->mvp.mvp = mvp * meshes_[i]->modelMatrix;
+		mesh->mvp.mvp = mvp * mesh->modelMatrix;
 	}
 
 	vk::PipelineStageFlags pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -164,7 +160,7 @@ bool VulkanRenderer2D::Render()
 
 	graphicsUnit_.GetGraphicsQueue().submit(submitInfos, swapchain_.GetFences()[currentRenderIndex_]);
 
-	const auto presentInfo = vk::PresentInfoKHR()
+	const vk::PresentInfoKHR presentInfo = vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
 		.setPWaitSemaphores(&swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_])
 		.setSwapchains(swapchain_.Get())
@@ -176,22 +172,28 @@ bool VulkanRenderer2D::Render()
 
 	if ( result != vk::Result::eSuccess )
 	{
-		swapchain_.Recreate();
-		currentRenderIndex_ = 0;
-		camera_.SetViewArea({ swapchain_.GetSize().width, swapchain_.GetSize().height });
-		camera_.UpdatePerspective();
-
-		SetupRenderArea();
+		OnResize();
 	}
 
 	return true;
 }
 
 
+void VulkanRenderer2D::OnResize() {
+	swapchain_.Recreate();
+	currentRenderIndex_ = 0;
+	camera_.SetViewArea({ swapchain_.GetSize().width, swapchain_.GetSize().height });
+	camera_.UpdatePerspective();
+
+	SetupRenderArea();
+}
+
+
 void VulkanRenderer2D::SetupRenderArea() {
 	const vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
 
-	viewport_.setWidth(static_cast<float>(renderExtent.width))
+	viewport_
+		.setWidth(static_cast<float>(renderExtent.width))
 		.setHeight(static_cast<float>(renderExtent.height))
 		.setX(0)
 		.setY(0)
@@ -199,18 +201,11 @@ void VulkanRenderer2D::SetupRenderArea() {
 		.setMaxDepth(1.0f);
 
 
-	scissor_.setExtent(renderExtent)
+	scissor_
+		.setExtent(renderExtent)
 		.setOffset({ 0, 0 });
 }
 
-
-void VulkanRenderer2D::Build()
-{
-	for ( uint32_t i = 0; i < swapchain_.GetImageCount(); i++ )
-	{
-		BuildCommandBufferCommands(i);
-	}
-}
 
 bool VulkanRenderer2D::Update()
 {

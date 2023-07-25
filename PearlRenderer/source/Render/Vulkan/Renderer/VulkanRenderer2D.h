@@ -29,12 +29,12 @@ public:
 	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
 	virtual bool Update() override;
 	void WaitFinishRender() const;
-	void Build();
 
 private:
 	void BuildCommandBufferCommands(uint32_t index);
 	virtual bool Render() override;
 
+	void OnResize();
 	void SetupRenderArea();
 
 private:

@@ -65,3 +65,18 @@ void PEARL_NAMESPACE::CommandBuffer::SetViewport(const vk::Viewport& viewport)
 {
 	commandBuffer_.setViewport(0, viewport);
 }
+
+void PEARL_NAMESPACE::CommandBuffer::PushConstants(const PipelineLayout& pipelineLayout, const pearl::typesRender::PushConstantInfo& pushConstantInfo)
+{
+	commandBuffer_.pushConstants(pipelineLayout.Get(), pushConstantInfo.shaderStage, 0, sizeof(pushConstantInfo.data), &pushConstantInfo.data);
+}
+
+void PEARL_NAMESPACE::CommandBuffer::DrawIndexed(const typesRender::Mesh& mesh)
+{
+	constexpr vk::DeviceSize offset[] = { 0 };
+	commandBuffer_.bindVertexBuffers(0, 1, &mesh.vertexResource.buffer, offset);
+
+	commandBuffer_.bindIndexBuffer(mesh.indexResource.buffer, 0, vk::IndexType::eUint32);
+
+	commandBuffer_.drawIndexed(((uint32_t)mesh.data.triangles.size() * 3u), 1, 0, 0, 0);
+}
