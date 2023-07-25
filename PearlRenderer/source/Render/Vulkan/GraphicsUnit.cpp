@@ -93,7 +93,7 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 
 	name_ = std::string(graphicsUnit_.getProperties().deviceName.data());
 
-	for (int i = 0; i < Config::renderer::numberOfGraphicsQueuesToUse; i++)
+	for (uint32_t i = 0; i < Config::renderer::numberOfGraphicsQueuesToUse; i++)
 	{
 		graphicsQueues_.push_back(logicalUnit_.getQueue(graphicsQueueIndex_, i));
 	}

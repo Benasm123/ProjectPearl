@@ -3,8 +3,11 @@
 #include <iostream>
 #include <Core/Config.h>
 #include "Core/Logger.h"
+
+#pragma warning(push, 0)
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#pragma warning(pop)
 
 
 /**
@@ -28,6 +31,8 @@ VulkanRenderer2D::VulkanRenderer2D(const pearl::Window& window)
 	{
 		descriptorSets_.push_back(graphicsPipelineLayout_.AllocateDescriptorSet(1)[0]);
 	}
+
+	SetupRenderArea();
 }
 
 VulkanRenderer2D::~VulkanRenderer2D()
@@ -94,44 +99,18 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 {
 	commandBuffers_[index].Get().reset();
 
-	const std::array<vk::ClearValue, 3> clearValues = {
-		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})},
-		vk::ClearDepthStencilValue{1.0f, 0},
-		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
-	};
+	commandBuffers_[index].Begin();
+	commandBuffers_[index].BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], vk::Rect2D{{0, 0}, swapchain_.GetSize()});
 
-	commandBuffers_[index].Get().begin(vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse));
+	commandBuffers_[index].BindPipeline(graphicsPipeline_);
 
-	commandBuffers_[index].Get().beginRenderPass(vk::RenderPassBeginInfo()
-												 .setRenderPass(renderPass_.Get())
-												 .setFramebuffer(swapchain_.GetFramebuffers()[index]->Get())
-												 .setRenderArea(vk::Rect2D(vk::Offset2D{0, 0}, swapchain_.GetSize()))
-												 .setClearValueCount((uint32_t)clearValues.size())
-												 .setPClearValues(clearValues.data()),
-												 vk::SubpassContents::eInline);
 
-	commandBuffers_[index].Get().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline_.Get());
-
+	// TODO -> Create wrapper class for descriptor sets, and make this into a CommandBuffer function to not use vulkan.
 	commandBuffers_[index].Get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_.Get(), 0, descriptorSets_[index], {});
 
-	const vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
-
-	viewport_.setWidth(static_cast<float>(renderExtent.width))
-		.setHeight(static_cast<float>(renderExtent.height))
-		.setX(0)
-		.setY(0)
-		.setMinDepth(0.0f)
-		.setMaxDepth(1.0f);
-
-	const std::vector<vk::Viewport> viewports = { viewport_ };
-
-	scissor_.setExtent(renderExtent)
-		.setOffset({ 0, 0 });
-
-	const std::vector<vk::Rect2D> scissors = { scissor_ };
-
-	commandBuffers_[index].Get().setScissor(0, scissors);
-	commandBuffers_[index].Get().setViewport(0, viewports);
+	// TODO -> Can add scissor and viewport to renderSurface class and allow commandBuffers to access these with a SetRenderSurface method.
+	commandBuffers_[index].SetScissor(scissor_);
+	commandBuffers_[index].SetViewport(viewport_);
 
 	for (auto& mesh : meshes_)
 	{
@@ -146,9 +125,8 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 
 	}
 
-	commandBuffers_[index].Get().endRenderPass();
-
-	commandBuffers_[index].Get().end();
+	commandBuffers_[index].EndRenderPass();
+	commandBuffers_[index].End();
 }
 
 
@@ -202,9 +180,27 @@ bool VulkanRenderer2D::Render()
 		currentRenderIndex_ = 0;
 		camera_.SetViewArea({ swapchain_.GetSize().width, swapchain_.GetSize().height });
 		camera_.UpdatePerspective();
+
+		SetupRenderArea();
 	}
 
 	return true;
+}
+
+
+void VulkanRenderer2D::SetupRenderArea() {
+	const vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
+
+	viewport_.setWidth(static_cast<float>(renderExtent.width))
+		.setHeight(static_cast<float>(renderExtent.height))
+		.setX(0)
+		.setY(0)
+		.setMinDepth(0.0f)
+		.setMaxDepth(1.0f);
+
+
+	scissor_.setExtent(renderExtent)
+		.setOffset({ 0, 0 });
 }
 
 

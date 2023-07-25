@@ -9,6 +9,12 @@ namespace PEARL_NAMESPACE::typesRender
 		glm::mat4 mvp;
 	};
 
+	struct PushConstantInfo 
+	{
+		vk::ShaderStageFlags shaderStage;
+		PushConstant data;
+	};
+
 	struct Triangle
 	{
 		uint32_t f1, f2, f3;

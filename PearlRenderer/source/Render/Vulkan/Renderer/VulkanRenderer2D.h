@@ -35,6 +35,8 @@ private:
 	void BuildCommandBufferCommands(uint32_t index);
 	virtual bool Render() override;
 
+	void SetupRenderArea();
+
 private:
 	const pearl::Window& window_;
 	pearl::RendererInstance instance_;

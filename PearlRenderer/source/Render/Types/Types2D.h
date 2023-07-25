@@ -1,5 +1,8 @@
 #pragma once
+
+#pragma warning(push, 0)
 #include <glm/glm.hpp>
+#pragma warning(pop)
 
 #include "PearlCore.h"
 

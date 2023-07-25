@@ -1,7 +1,11 @@
 #pragma once
 #include <filesystem>
 #include <vector>
+
+#pragma warning(push, 0)
 #include "vulkan/vulkan.hpp"
+#pragma warning(pop)
+
 #include "Render/Types/Types2D.h"
 #include "Render/Types/TypesRender.h"
 

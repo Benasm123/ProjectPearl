@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 	mesh.position.x = 0;
 
 	PhysicsObject phys{};
-	phys.mass_ = 6.0e12;
+	phys.mass_ = 6.0e12f;
 	GravitationalPull pull{ phys };
 	pull.SetCentre(mesh.position);
 	pull.SetIsGlobal(false);
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	moon.data = utils::GetSpherePoints(4.0f, 1);
 	moon.position = { 1100, 0, 0 };
 	PhysicsObject moonPhysics{};
-	moonPhysics.mass_ = 6.0e10;
+	moonPhysics.mass_ = 6.0e10f;
 	moonPhysics.velocity_.y = -100;
 
 	// ORB OBJECT
@@ -61,9 +61,9 @@ int main(int argc, char* argv[])
 			, pull{phys}
 		{
 			mesh.data = utils::GetSpherePoints(7.0f, 0);
-			mesh.position.x = (rand() % 500) - 250;
-			mesh.position.y = (rand() % 500) - 250;
-			mesh.position.z = (rand() % 500) - 250;
+			mesh.position.x = (float)(rand() % 500) - 250.0f;
+			mesh.position.y = (float)(rand() % 500) - 250.0f;
+			mesh.position.z = (float)(rand() % 500) - 250.0f;
 			mesh.position = glm::normalize(mesh.position) * 1520.0f;
 			mesh.position = { 1000, 0, 0 };
 
@@ -138,12 +138,12 @@ int main(int argc, char* argv[])
 		oldTime = currentTime;
 
 		moonPhysics.position_ = moon.position;
-		moonPhysics.Update(deltaTime);
+		moonPhysics.Update((float)deltaTime);
 		moon.position += moonPhysics.velocity_ * (float)deltaTime;
 		
 		for (Orb* orb : orbs)
 		{
-			orb->Update(deltaTime, sphereColliders);
+			orb->Update((float)deltaTime, sphereColliders);
 		}
 
 		running = window.Update();
