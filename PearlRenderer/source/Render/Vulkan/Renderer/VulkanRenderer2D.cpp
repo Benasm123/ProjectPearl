@@ -100,7 +100,7 @@ void VulkanRenderer2D::BuildCommandBufferCommands(const uint32_t index)
 	commandBuffers_[index].Get().reset();
 
 	commandBuffers_[index].Begin();
-	commandBuffers_[index].BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], vk::Rect2D{{0, 0}, swapchain_.GetSize()});
+	commandBuffers_[index].BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], scissor_);
 
 	commandBuffers_[index].BindPipeline(graphicsPipeline_);
 
