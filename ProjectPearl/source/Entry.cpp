@@ -3,7 +3,7 @@
 #include <memory>
 #include "Core/Logger.h"
 #include "Render/Generic/Renderer.h"
-#include "Render/Vulkan/Renderer/VulkanRenderer2D.h"
+#include "Render/Vulkan/Renderer/VulkanRenderer.h"
 #include "Collisions/SphereCollider.h"
 #include "Collisions/BoxCollider.h"
 #include "PhysicsObject.h"
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 	spdlog::set_level(spdlog::level::trace);
 
 	pearl::Window window("Pearl Engine", 1200, 1000);
-	auto renderer = VulkanRenderer2D(window);
+	auto renderer = VulkanRenderer(window);
 
 	// PLANET
 	pearl::typesRender::Mesh mesh;

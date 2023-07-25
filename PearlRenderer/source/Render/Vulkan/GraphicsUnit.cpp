@@ -18,7 +18,7 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 	const std::vector<vk::QueueFamilyProperties> queueFamilyProperties = graphicsUnit_.getQueueFamilyProperties();
 
 	uint32_t index = 0;
-	for (vk::QueueFamilyProperties queueFamilyProperty : queueFamilyProperties )
+	for (const vk::QueueFamilyProperties& queueFamilyProperty : queueFamilyProperties )
 	{
 		if ( queueFamilyProperty.queueFlags & vk::QueueFlagBits::eGraphics
 			&& graphicsQueueIndex_ == ~0u )
@@ -103,6 +103,12 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 GraphicsUnit::~GraphicsUnit()
 {
 	logicalUnit_.destroy();
+}
+
+void PEARL_NAMESPACE::GraphicsUnit::WaitForFences(std::vector<vk::Fence> fences)
+{
+	vk::Result result = logicalUnit_.waitForFences(fences, VK_TRUE, UINT64_MAX);
+	logicalUnit_.resetFences(fences);
 }
 
 

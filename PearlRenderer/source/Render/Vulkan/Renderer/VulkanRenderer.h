@@ -2,7 +2,6 @@
 #pragma once
 #include "Core/Camera.h"
 #include "Render/Vulkan/RendererInstance.h"
-#include "Render/Generic/Renderer2D.h"
 #include "Render/Vulkan/CommandBuffer.h"
 #include "Render/Vulkan/CommandPool.h"
 #include "Render/Vulkan/GraphicsPipeline.h"
@@ -14,25 +13,24 @@
 #include "Window/Window.h"
 
 
-class VulkanRenderer2D :
-    public Renderer2D
+class VulkanRenderer
 {
 public:
-	VulkanRenderer2D(const pearl::Window& window);
-	~VulkanRenderer2D() override;
+	VulkanRenderer(const pearl::Window& window);
+	~VulkanRenderer();
 
-	virtual void DrawLine(PEARL_NAMESPACE::types2D::Point2D start, PEARL_NAMESPACE::types2D::Point2D end) override;
-	virtual void DrawLines(std::vector<PEARL_NAMESPACE::types2D::Point2D> points) override;
-	virtual void DrawRect(PEARL_NAMESPACE::types2D::Rect2D rect) override;
-	virtual void DrawRects(std::vector<PEARL_NAMESPACE::types2D::Rect2D> rects) override;
 	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
 	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
-	virtual bool Update() override;
+	bool Update();
 	void WaitFinishRender() const;
 
 private:
 	void BuildCommandBufferCommands(uint32_t index);
-	virtual bool Render() override;
+	bool Render();
+
+	void SubmitGraphicsQueue();
+
+	bool Present(uint32_t nextImageIndex);
 
 	void OnResize();
 	void SetupRenderArea();

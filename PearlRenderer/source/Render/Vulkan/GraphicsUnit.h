@@ -14,6 +14,8 @@ namespace PEARL_NAMESPACE
 		GraphicsUnit(const RendererInstance& instance, vk::PhysicalDevice device);
 		~GraphicsUnit();
 
+		void WaitForFences(std::vector<vk::Fence> fences);
+
 		[[nodiscard]] vk::PhysicalDeviceLimits GetLimits() const;
 		[[nodiscard]] vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(const RenderSurface& surface) const;
 		std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(const RenderSurface& surface) const;
