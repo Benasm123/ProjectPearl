@@ -57,10 +57,10 @@ int main(int argc, char* argv[])
 		GravitationalPull pull;
 
 		Orb()
-			: coll{ 7.0f, mesh.position }
+			: coll{ 20.0f, mesh.position }
 			, pull{phys}
 		{
-			mesh.data = utils::GetSpherePoints(7.0f, 0);
+			mesh.data = utils::GetSpherePoints(20.0f, 0);
 			mesh.position.x = (float)(rand() % 500) - 250.0f;
 			mesh.position.y = (float)(rand() % 500) - 250.0f;
 			mesh.position.z = (float)(rand() % 500) - 250.0f;

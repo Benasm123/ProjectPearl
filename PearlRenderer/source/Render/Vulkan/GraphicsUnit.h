@@ -3,6 +3,8 @@
 #include "RendererInstance.h"
 #include "vulkan/vulkan.hpp"
 #include "Window/RenderSurface.h"
+#include "Queue.h"
+#include "BDVK/BDVK_enums.h"
 
 
 namespace PEARL_NAMESPACE
@@ -38,12 +40,12 @@ namespace PEARL_NAMESPACE
 		[[nodiscard]] uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex_; }
 		[[nodiscard]] uint32_t GetComputeQueueIndex() const { return computeQueueIndex_; }
 
-		[[nodiscard]] vk::Queue GetGraphicsQueue();
+		[[nodiscard]] Queue GetGraphicsQueue();
 
-		[[nodiscard]] vk::Buffer CreateBuffer(size_t size, vk::BufferUsageFlags usageFlags, vk::SharingMode sharingMode=vk::SharingMode::eExclusive);
+		[[nodiscard]] vk::Buffer CreateBuffer(size_t size, bdvk::BufferType usageFlags, vk::SharingMode sharingMode=vk::SharingMode::eExclusive);
 		[[nodiscard]] vk::DeviceMemory AllocateMemory(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags memoryFlags);
 		[[nodiscard]] void* BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize offset=0, vk::DeviceSize size=VK_WHOLE_SIZE);
-		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, vk::BufferUsageFlags usage);
+		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, bdvk::BufferType usage);
 	private:
 		std::string name_;
 
@@ -60,9 +62,9 @@ namespace PEARL_NAMESPACE
 		uint32_t graphicsQueueIndex_ = ~0u;
 		uint32_t computeQueueIndex_ = ~0u;
 
-		uint32_t graphicsQueuePos_ = 0;
-		std::vector<vk::Queue> graphicsQueues_;
-		uint32_t computeQueuePos_ = 0;
-		std::vector<vk::Queue> computeQueues_;
+		Queue graphicsQueue_;
+		Queue computeQueue_;
+
+		friend class Queue;
 	};
 }

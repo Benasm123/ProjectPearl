@@ -58,6 +58,8 @@ namespace PEARL_NAMESPACE
 
 
 		vk::Extent2D size_;
+
+		friend class Queue;
 	};
 }
 

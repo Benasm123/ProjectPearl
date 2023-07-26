@@ -11,6 +11,7 @@
 #include "Render/Vulkan/Swapchain.h"
 #include "Window/RenderSurface.h"
 #include "Window/Window.h"
+#include "Render/Vulkan/DescriptorSets.h"
 
 
 class VulkanRenderer
@@ -46,15 +47,16 @@ private:
 	pearl::PipelineLayout graphicsPipelineLayout_;
 	pearl::GraphicsPipeline graphicsPipeline_;
 
+	pearl::DescriptorSets descriptorSets_;
+
 	pearl::CommandPool commandPool_;
 	std::vector<pearl::CommandBuffer> commandBuffers_;
-	std::vector<vk::DescriptorSet> descriptorSets_;
 
 	uint32_t currentRenderIndex_ = 0;
 
 	std::vector<pearl::typesRender::Mesh*> meshes_;
 	
-	//TODO -- Consider moving this
+	//TODO -- Consider moving this -> Move to a render area class.
 	vk::Rect2D scissor_;
 	vk::Viewport viewport_;
 

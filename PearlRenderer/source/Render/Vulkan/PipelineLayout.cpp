@@ -111,12 +111,12 @@ void PipelineLayout::CreatePipelineLayout()
 }
 
 
-std::vector<vk::DescriptorSet> PipelineLayout::AllocateDescriptorSet(const uint32_t count) const
+std::vector<vk::DescriptorSet> PipelineLayout::AllocateDescriptorSet() const
 {
 	const vk::DescriptorSetAllocateInfo setAllocateInfo = vk::DescriptorSetAllocateInfo()
-	                                                      .setDescriptorPool(descriptorPool_)
-	                                                      .setPSetLayouts(descriptorSetLayouts_.data())
-	                                                      .setDescriptorSetCount(count);
+		.setDescriptorPool(descriptorPool_)
+		.setPSetLayouts(descriptorSetLayouts_.data())
+		.setDescriptorSetCount((uint32_t)descriptorSetLayouts_.size());
 
 	return graphicsUnit_.GetLogical().allocateDescriptorSets(setAllocateInfo);
 	return{};

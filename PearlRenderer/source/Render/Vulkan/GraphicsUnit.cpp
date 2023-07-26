@@ -93,10 +93,8 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 
 	name_ = std::string(graphicsUnit_.getProperties().deviceName.data());
 
-	for (uint32_t i = 0; i < Config::renderer::numberOfGraphicsQueuesToUse; i++)
-	{
-		graphicsQueues_.push_back(logicalUnit_.getQueue(graphicsQueueIndex_, i));
-	}
+	graphicsQueue_ = Queue(*this, graphicsQueueIndex_, Config::renderer::numberOfGraphicsQueuesToUse);
+	computeQueue_ = Queue(*this, computeQueueIndex_, Config::renderer::numberOfComputeQueuesToUse);
 }
 
 
@@ -199,20 +197,18 @@ vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::For
 }
 
 
-vk::Queue GraphicsUnit::GetGraphicsQueue()
+Queue GraphicsUnit::GetGraphicsQueue()
 {
-	// graphicsQueuePos_++;
-	// graphicsQueuePos_ %= Config::renderer::numberOfGraphicsQueuesToUse;
-	return graphicsQueues_[graphicsQueuePos_];
+	return graphicsQueue_;
 }
 
-vk::Buffer GraphicsUnit::CreateBuffer(size_t size, vk::BufferUsageFlags usageFlags, vk::SharingMode sharingMode)
+vk::Buffer GraphicsUnit::CreateBuffer(size_t size, bdvk::BufferType usageFlags, vk::SharingMode sharingMode)
 {
 	const vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
 		.setFlags({})
 		.setSize(size)
 		.setSharingMode(sharingMode)
-		.setUsage(usageFlags);
+		.setUsage((vk::BufferUsageFlagBits)usageFlags);
 
 	return logicalUnit_.createBuffer(bufferInfo);
 }
@@ -232,7 +228,7 @@ void* GraphicsUnit::BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory m
 	return logicalUnit_.mapMemory(memory, offset, size, {});
 }
 
-PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(size_t size, vk::BufferUsageFlags usage) 
+PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(size_t size, bdvk::BufferType usage)
 {
 	PEARL_NAMESPACE::typesRender::BufferResource bufferResource;
 	bufferResource.buffer = CreateBuffer(size, usage);

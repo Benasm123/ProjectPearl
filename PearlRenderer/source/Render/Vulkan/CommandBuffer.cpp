@@ -1,6 +1,7 @@
 #include "CommandBuffer.h"
 #include "FrameBuffer.h"
 #include "GraphicsPipeline.h"
+#include "DescriptorSets.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -24,6 +25,11 @@ void CommandBuffer::Begin() const
 void CommandBuffer::End() const
 {
 	commandBuffer_.end();
+}
+
+void PEARL_NAMESPACE::CommandBuffer::Reset() const
+{
+	commandBuffer_.reset();
 }
 
 void PEARL_NAMESPACE::CommandBuffer::BeginRenderPass(const RenderPass& renderPass, const FrameBuffer& framebuffer, vk::Rect2D renderArea) const
@@ -66,9 +72,14 @@ void PEARL_NAMESPACE::CommandBuffer::SetViewport(const vk::Viewport& viewport)
 	commandBuffer_.setViewport(0, viewport);
 }
 
+void PEARL_NAMESPACE::CommandBuffer::BindDescriptorSets(vk::PipelineBindPoint bindPoint, const PipelineLayout& pipelineLayout, const DescriptorSets& descriptorSet)
+{
+	commandBuffer_.bindDescriptorSets(bindPoint, pipelineLayout.Get(), 0, descriptorSet.descriptorSets_, {});
+}
+
 void PEARL_NAMESPACE::CommandBuffer::PushConstants(const PipelineLayout& pipelineLayout, const pearl::typesRender::PushConstantInfo& pushConstantInfo)
 {
-	commandBuffer_.pushConstants(pipelineLayout.Get(), pushConstantInfo.shaderStage, 0, sizeof(pushConstantInfo.data), &pushConstantInfo.data);
+	commandBuffer_.pushConstants(pipelineLayout.Get(), (vk::ShaderStageFlagBits)pushConstantInfo.shaderStage, 0, sizeof(pushConstantInfo.data), &pushConstantInfo.data);
 }
 
 void PEARL_NAMESPACE::CommandBuffer::DrawIndexed(const typesRender::Mesh& mesh)

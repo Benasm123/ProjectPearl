@@ -1,5 +1,6 @@
 #pragma once
 #include "PearlCore.h"
+#include "Render/Vulkan/BDVK/BDVK_enums.h"
 
 
 namespace PEARL_NAMESPACE::typesRender
@@ -11,7 +12,7 @@ namespace PEARL_NAMESPACE::typesRender
 
 	struct PushConstantInfo 
 	{
-		vk::ShaderStageFlags shaderStage;
+		bdvk::ShaderType shaderStage;
 		PushConstant data;
 	};
 
@@ -33,6 +34,7 @@ namespace PEARL_NAMESPACE::typesRender
 		std::vector<Triangle> triangles;
 	};
 	
+	// TODO -> Remove vk::Buffer Usage and vk::DeviceMemory.
 	struct BufferResource
 	{
 		vk::Buffer buffer;

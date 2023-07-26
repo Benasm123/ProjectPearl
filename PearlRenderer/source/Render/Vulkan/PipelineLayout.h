@@ -12,7 +12,7 @@ namespace PEARL_NAMESPACE
 
 		[[nodiscard]] const vk::PipelineLayout& Get() const { return pipelineLayout_; }
 
-		std::vector<vk::DescriptorSet> AllocateDescriptorSet(uint32_t count) const;
+		std::vector<vk::DescriptorSet> AllocateDescriptorSet() const;
 
 	private:
 		void CreateDescriptorSetLayout();
