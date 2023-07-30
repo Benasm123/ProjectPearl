@@ -10,15 +10,18 @@ namespace PEARL_NAMESPACE
 		RenderPass(const GraphicsUnit& graphicsUnit, const RenderSurface& renderSurface);
 		~RenderPass();
 
-		[[nodiscard]] const vk::RenderPass& Get() const { return renderPass_; }
-
 	private:
 		void CreateRenderPass(const RenderSurface& renderSurface);
 
 	private:
-		vk::RenderPass renderPass_{};
+		class vk::RenderPass renderPass_{};
 
 		const GraphicsUnit& graphicsUnit_;
+
+		friend class CommandBuffer;
+		friend class FrameBuffer;
+		friend class GraphicsPipeline;
+		friend class RenderPass;
 	};
 }
 

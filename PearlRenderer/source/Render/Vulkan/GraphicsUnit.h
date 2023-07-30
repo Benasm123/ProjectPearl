@@ -13,51 +13,56 @@ namespace PEARL_NAMESPACE
 	class GraphicsUnit
 	{
 	public:
-		GraphicsUnit(const RendererInstance& instance, vk::PhysicalDevice device);
+		// TODO -> Make a way to add a specific graphics card, or pass a graphics card/index.
+		GraphicsUnit(const RendererInstance& instance);
 		~GraphicsUnit();
 
-		void WaitForFences(std::vector<vk::Fence> fences);
+		bool WaitForFences(Fence* fences);
 
-		[[nodiscard]] vk::PhysicalDeviceLimits GetLimits() const;
-		[[nodiscard]] vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(const RenderSurface& surface) const;
-		std::vector<vk::SurfaceFormatKHR> GetSurfaceFormats(const RenderSurface& surface) const;
-		vk::SurfaceFormatKHR GetBestSurfaceFormat(const RenderSurface& surface) const;
-		std::vector<vk::PresentModeKHR> GetSurfacePresentModes(const RenderSurface& surface) const;
-		uint32_t GetMemoryIndexOfType(vk::MemoryPropertyFlags memoryProperty) const;
+		void WaitIdle();
 
-		[[nodiscard]] const vk::PhysicalDevice& GetPhysical() const { return graphicsUnit_; }
-		[[nodiscard]] const vk::Device& GetLogical() const { return logicalUnit_; }
-
-		[[nodiscard]] vk::SwapchainKHR CreateSwapchain(const vk::SwapchainCreateInfoKHR& createInfo) const;
-		std::vector<vk::Image> GetSwapchainImages(vk::SwapchainKHR swapchain) const;
-		void DestroySwapchain(const vk::SwapchainKHR swapchainToDestroy) const;
-
-		[[nodiscard]] vk::RenderPass CreateRenderPass(const vk::RenderPassCreateInfo& renderPassInfo) const;
-		void DestroyRenderPass(const vk::RenderPass renderPass) const;
-
-		[[nodiscard]] vk::ImageView CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlagBits imageAspect) const;
+		[[nodiscard]] Queue GetGraphicsQueue();
 
 		[[nodiscard]] uint32_t GetGraphicsQueueIndex() const { return graphicsQueueIndex_; }
 		[[nodiscard]] uint32_t GetComputeQueueIndex() const { return computeQueueIndex_; }
 
-		[[nodiscard]] Queue GetGraphicsQueue();
-
-		[[nodiscard]] vk::Buffer CreateBuffer(size_t size, bdvk::BufferType usageFlags, vk::SharingMode sharingMode=vk::SharingMode::eExclusive);
-		[[nodiscard]] vk::DeviceMemory AllocateMemory(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags memoryFlags);
-		[[nodiscard]] void* BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize offset=0, vk::DeviceSize size=VK_WHOLE_SIZE);
 		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, bdvk::BufferType usage);
+
+		void DestroyMesh(const pearl::typesRender::Mesh& mesh);
+
+	private:
+		[[nodiscard]] struct vk::PhysicalDeviceLimits GetLimits() const;
+		[[nodiscard]] struct vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(const RenderSurface& surface) const;
+		std::vector<struct vk::SurfaceFormatKHR> GetSurfaceFormats(const RenderSurface& surface) const;
+		struct vk::SurfaceFormatKHR GetBestSurfaceFormat(const RenderSurface& surface) const;
+		std::vector<enum vk::PresentModeKHR> GetSurfacePresentModes(const RenderSurface& surface) const;
+		uint32_t GetMemoryIndexOfType(class vk::Flags<vk::MemoryPropertyFlagBits> memoryProperty) const;
+
+		[[nodiscard]] class vk::SwapchainKHR CreateSwapchain(const struct vk::SwapchainCreateInfoKHR& createInfo) const;
+		std::vector<class vk::Image> GetSwapchainImages(class vk::SwapchainKHR swapchain) const;
+		void DestroySwapchain(const class vk::SwapchainKHR swapchainToDestroy) const;
+
+		[[nodiscard]] class vk::RenderPass CreateRenderPass(const vk::RenderPassCreateInfo& renderPassInfo) const;
+		void DestroyRenderPass(const vk::RenderPass renderPass) const;
+
+		[[nodiscard]] class vk::ImageView CreateImageView(class vk::Image image, enum class vk::Format format, enum class vk::ImageAspectFlagBits imageAspect) const;
+
+		[[nodiscard]] class vk::Buffer CreateBuffer(size_t size, bdvk::BufferType usageFlags, enum vk::SharingMode sharingMode = vk::SharingMode::eExclusive);
+		[[nodiscard]] class vk::DeviceMemory AllocateMemory(struct vk::MemoryRequirements requirements, class vk::Flags<vk::MemoryPropertyFlagBits> memoryFlags);
+		[[nodiscard]] void* BindAndMapBufferMemory(class vk::Buffer buffer, class vk::DeviceMemory memory,  uint64_t offset = 0, uint64_t size = VK_WHOLE_SIZE);
+
 	private:
 		std::string name_;
 
 		std::vector<const char*> layers_;
 		std::vector<const char*> extensions_;
 
-		vk::PhysicalDeviceFeatures requiredFeatures_;
+		struct vk::PhysicalDeviceFeatures requiredFeatures_;
 
 		const RendererInstance& instance_;
 
-		vk::PhysicalDevice graphicsUnit_;
-		vk::Device logicalUnit_;
+		class vk::PhysicalDevice graphicsUnit_;
+		class vk::Device logicalUnit_;
 
 		uint32_t graphicsQueueIndex_ = ~0u;
 		uint32_t computeQueueIndex_ = ~0u;
@@ -66,5 +71,15 @@ namespace PEARL_NAMESPACE
 		Queue computeQueue_;
 
 		friend class Queue;
+		friend class FrameBuffer;
+		friend class PipelineLayout;
+		friend class GraphicsPipeline;
+		friend class CommandPool;
+		friend class Image;
+		friend class Swapchain;
+		friend class Fence;
+		friend class Semaphore;
+		friend class CommandBuffer;
+		friend class RenderPass;
 	};
 }

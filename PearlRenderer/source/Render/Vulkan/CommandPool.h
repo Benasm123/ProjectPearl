@@ -11,13 +11,12 @@ namespace PEARL_NAMESPACE
 		CommandPool(const GraphicsUnit& graphicsUnit, uint32_t queueIndex);
 		~CommandPool();
 
-		[[nodiscard]] std::vector<CommandBuffer> AllocateCommandBuffers(uint32_t number, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
-
-		[[nodiscard]] const vk::CommandPool& Get() const { return commandPool_; }
 	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		vk::CommandPool commandPool_;
+		class vk::CommandPool commandPool_;
+
+		friend class CommandBuffer;
 	};
 }
 

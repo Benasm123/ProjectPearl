@@ -1,6 +1,7 @@
 #include "GraphicsPipeline.h"
 
 #include "Render/Types/Types2D.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -16,7 +17,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsUnit& graphicsUnit, const Rende
 
 GraphicsPipeline::~GraphicsPipeline()
 {
-	graphicsUnit_.GetLogical().destroyPipeline(pipeline_);
+	graphicsUnit_.logicalUnit_.destroyPipeline(pipeline_);
 }
 
 
@@ -31,7 +32,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 	                                                    .setCodeSize(vertexShaderCode.size())
 	                                                    .setPCode(reinterpret_cast<uint32_t*>(vertexShaderCode.data()));
 
-	const vk::ShaderModule vertexModule = graphicsUnit_.GetLogical().createShaderModule(vertexModuleInfo);
+	const vk::ShaderModule vertexModule = graphicsUnit_.logicalUnit_.createShaderModule(vertexModuleInfo);
 
 	const vk::PipelineShaderStageCreateInfo vertexStageInfo = vk::PipelineShaderStageCreateInfo()
 	                                                          .setFlags({})
@@ -46,7 +47,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setCodeSize(fragmentShaderCode.size())
 		.setPCode(reinterpret_cast<uint32_t*>(fragmentShaderCode.data()));
 
-	const vk::ShaderModule fragmentModule = graphicsUnit_.GetLogical().createShaderModule(fragmentModuleInfo);
+	const vk::ShaderModule fragmentModule = graphicsUnit_.logicalUnit_.createShaderModule(fragmentModuleInfo);
 
 	const vk::PipelineShaderStageCreateInfo fragmentStageInfo = vk::PipelineShaderStageCreateInfo()
 		.setFlags({})
@@ -109,7 +110,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::PipelineTessellationStateCreateInfo tessellationInfo = vk::PipelineTessellationStateCreateInfo()
 		.setFlags({})
-		.setPatchControlPoints(graphicsUnit_.GetPhysical().getProperties().limits.maxTessellationPatchSize);
+		.setPatchControlPoints(0);
 
 #pragma endregion TesselationState
 
@@ -223,7 +224,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::GraphicsPipelineCreateInfo graphicsPipelineInfo = vk::GraphicsPipelineCreateInfo()
 		.setFlags({})
-		.setLayout(pipelineLayout_.Get())
+		.setLayout(pipelineLayout_.pipelineLayout_)
 		.setStageCount(static_cast<uint32_t>(stages.size()))
 		.setPStages(stages.data())
 		.setPVertexInputState(&vertexInputInfo)
@@ -235,20 +236,19 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setPDepthStencilState(&depthStencilInfo)
 		.setPColorBlendState(&colourBlendInfo)
 		.setPDynamicState(&dynamicInfo)
-		.setLayout(pipelineLayout_.Get())
-		.setRenderPass(renderPass_.Get())
+		.setRenderPass(renderPass_.renderPass_)
 		.setSubpass(0)
 		.setBasePipelineHandle(VK_NULL_HANDLE)
 		.setBasePipelineIndex(0);
 
 	constexpr vk::PipelineCacheCreateInfo pipelineCacheInfo;
-	auto pipelineCache = graphicsUnit_.GetLogical().createPipelineCache(pipelineCacheInfo, nullptr);
-	pipeline_ = graphicsUnit_.GetLogical().createGraphicsPipeline(pipelineCache, graphicsPipelineInfo).value;
+	auto pipelineCache = graphicsUnit_.logicalUnit_.createPipelineCache(pipelineCacheInfo, nullptr);
+	pipeline_ = graphicsUnit_.logicalUnit_.createGraphicsPipeline(pipelineCache, graphicsPipelineInfo).value;
 
 	for (vk::ShaderModule module : shaderModules)
 	{
-		graphicsUnit_.GetLogical().destroyShaderModule(module);
+		graphicsUnit_.logicalUnit_.destroyShaderModule(module);
 	}
 
-	graphicsUnit_.GetLogical().destroyPipelineCache(pipelineCache);
+	graphicsUnit_.logicalUnit_.destroyPipelineCache(pipelineCache);
 }

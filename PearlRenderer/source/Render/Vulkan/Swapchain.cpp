@@ -1,4 +1,7 @@
 #include "Swapchain.h"
+#include "Fence.h"
+#include "Semaphore.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -15,19 +18,19 @@ Swapchain::Swapchain(const GraphicsUnit& graphicsUnit, const RenderPass& renderP
 
 Swapchain::~Swapchain()
 {
-	for (const vk::Fence fence : fences_)
+	for (const Fence* fence : fences_)
 	{
-		graphicsUnit_.GetLogical().destroyFence(fence);
+		delete fence;
 	}
 
-	for ( const vk::Semaphore semaphore : drawCompleteSemaphore_ )
+	for ( const Semaphore* semaphore : drawCompleteSemaphore_ )
 	{
-		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+		delete semaphore;
 	}
 
-	for ( const vk::Semaphore semaphore : imageAcquiredSemaphore_ )
+	for ( const Semaphore* semaphore : imageAcquiredSemaphore_ )
 	{
-		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+		delete semaphore;
 	}
 
 	for (const Image* image : swapchainImages_)
@@ -46,12 +49,11 @@ Swapchain::~Swapchain()
 
 uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
 {
-	const auto result = graphicsUnit_.GetLogical().acquireNextImageKHR(swapchain_, UINT64_MAX, imageAcquiredSemaphore_[currentIndex], VK_NULL_HANDLE);
+	const auto result = graphicsUnit_.logicalUnit_.acquireNextImageKHR(swapchain_, 100, imageAcquiredSemaphore_[currentIndex]->_internalSemaphore_, VK_NULL_HANDLE);
 
 	if (result.result != vk::Result::eSuccess)
 	{
-		LOG_ERROR("couldnt get next image!");
-		return -1;
+		return ~0u;
 	}
 
 	return result.value;
@@ -60,7 +62,7 @@ uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
 
 void Swapchain::Recreate()
 {
-	graphicsUnit_.GetLogical().waitIdle();
+	graphicsUnit_.logicalUnit_.waitIdle();
 
 	GetSwapchainSettings();
 	CreateSwapchain();
@@ -92,7 +94,7 @@ void Swapchain::CreateSwapchain()
 		.setPreTransform(swapchainTransform_)
 		.setPresentMode(swapchainPresentMode_)
 		.setOldSwapchain(oldSwapchain)
-		.setSurface(renderSurface_.Get());
+		.setSurface(renderSurface_.surface_);
 
 	swapchain_ = graphicsUnit_.CreateSwapchain(swapchainInfo);
 	graphicsUnit_.DestroySwapchain(oldSwapchain);
@@ -152,6 +154,7 @@ void Swapchain::CreateFramebuffers()
 	{
 		delete frameBuffer;
 	}
+
 	frameBuffers_.clear();
 
 	frameBuffers_.resize(swapchainImageCount_);
@@ -168,26 +171,23 @@ void Swapchain::CreateSynchronization()
 {
 	for (const auto semaphore : imageAcquiredSemaphore_)
 	{
-		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+		delete semaphore;
 	}
 
 	for (const auto semaphore : drawCompleteSemaphore_ )
 	{
-		graphicsUnit_.GetLogical().destroySemaphore(semaphore);
+		delete semaphore;
 	}
 
 	for ( const auto fence : fences_ )
 	{
-		graphicsUnit_.GetLogical().destroyFence(fence);
+		delete fence;
 	}
-
-	constexpr vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
-	constexpr vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled);
 
 	for (uint32_t i = 0; i < (swapchainImageCount_ + 1); i++)
 	{
-		imageAcquiredSemaphore_.push_back(graphicsUnit_.GetLogical().createSemaphore(semaphoreInfo));
-		drawCompleteSemaphore_.push_back(graphicsUnit_.GetLogical().createSemaphore(semaphoreInfo));
-		fences_.push_back(graphicsUnit_.GetLogical().createFence(fenceInfo));
+		imageAcquiredSemaphore_.push_back(new Semaphore(graphicsUnit_));
+		drawCompleteSemaphore_.push_back(new Semaphore(graphicsUnit_));
+		fences_.push_back(new Fence(graphicsUnit_));
 	}
 }

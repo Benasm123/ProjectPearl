@@ -18,24 +18,26 @@
 VulkanRenderer::VulkanRenderer(const pearl::Window& window)
 	: window_{window}
 	, instance_{window_}
-	, graphicsUnit_{instance_, instance_.FindBestGraphicsUnit()} // TODO -> This can maybe be defaulted and take out the vk::Device requirement, instead provide some way to select a gpu, through gpu struct.
+	, graphicsUnit_{instance_}
 	, renderSurface_{instance_, window_}
 	, renderPass_{graphicsUnit_, renderSurface_}
 	, swapchain_{ graphicsUnit_, renderPass_, renderSurface_ }
 	, graphicsPipelineLayout_{graphicsUnit_}
 	, graphicsPipeline_{graphicsUnit_, renderSurface_, renderPass_, graphicsPipelineLayout_}
 	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
-	, camera_{45.0f, {swapchain_.GetSize().width, swapchain_.GetSize().height}}
+	, camera_{45.0f, swapchain_.GetSize()}
 	, descriptorSets_{graphicsPipelineLayout_}
 {
-	commandBuffers_ = commandPool_.AllocateCommandBuffers(swapchain_.GetImageCount());
+	for (uint32_t i = 0; i < swapchain_.GetImageCount(); i++) {
+		commandBuffers_.push_back(new pearl::CommandBuffer(commandPool_));
+	}
 
 	SetupRenderArea();
 }
 
 VulkanRenderer::~VulkanRenderer()
 {
-	WaitFinishRender();
+	graphicsUnit_.WaitIdle();
 };
 
 ///
@@ -60,34 +62,27 @@ void VulkanRenderer::DrawMesh(pearl::typesRender::Mesh& mesh)
 
 void VulkanRenderer::DestroyMesh(const pearl::typesRender::Mesh& mesh)
 {
-	WaitFinishRender();
+	graphicsUnit_.WaitIdle();
 
-	graphicsUnit_.GetLogical().unmapMemory(mesh.vertexResource.memory);
-	graphicsUnit_.GetLogical().freeMemory(mesh.vertexResource.memory);
-	graphicsUnit_.GetLogical().destroyBuffer(mesh.vertexResource.buffer);
-
-	graphicsUnit_.GetLogical().unmapMemory(mesh.indexResource.memory);
-	graphicsUnit_.GetLogical().freeMemory(mesh.indexResource.memory);
-	graphicsUnit_.GetLogical().destroyBuffer(mesh.indexResource.buffer);
+	graphicsUnit_.DestroyMesh(mesh);
 }
 
 
 void VulkanRenderer::BuildCommandBufferCommands(const uint32_t index)
 {
-	pearl::CommandBuffer currentBuffer = commandBuffers_[index];
+	pearl::CommandBuffer currentBuffer = *commandBuffers_[index];
 
 	currentBuffer.Reset();
 
 	currentBuffer.Begin();
-	currentBuffer.BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], scissor_);
+	currentBuffer.BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], renderSurface_);
 
 	currentBuffer.BindPipeline(graphicsPipeline_);
 
 	// TODO -> Can add scissor and viewport to renderSurface class and allow commandBuffers to access these with a SetRenderSurface method.
-	currentBuffer.SetScissor(scissor_);
-	currentBuffer.SetViewport(viewport_);
+	currentBuffer.SetRenderSurface(renderSurface_);
 
-	currentBuffer.BindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout_, descriptorSets_);
+	currentBuffer.BindDescriptorSets(bdvk::PipelineBindPoint::Graphics, graphicsPipelineLayout_, descriptorSets_);
 
 	for (auto& mesh : meshes_)
 	{
@@ -104,9 +99,11 @@ void VulkanRenderer::BuildCommandBufferCommands(const uint32_t index)
 bool VulkanRenderer::Render()
 {
 	// TODO -> Fences needs to be wrapped.
-	graphicsUnit_.WaitForFences({ swapchain_.GetFences()[currentRenderIndex_] });
+	bool res = graphicsUnit_.WaitForFences(swapchain_.GetFences()[currentRenderIndex_]);
+	if (!res) return false;
 
 	const uint32_t nextImageIndex = swapchain_.GetNextImageIndex(currentRenderIndex_);
+	if (nextImageIndex == ~0u) return false;
 
 	BuildCommandBufferCommands(currentRenderIndex_);
 
@@ -118,7 +115,7 @@ bool VulkanRenderer::Render()
 
 	if (!presentSucceded)
 	{
-			OnResize();
+		OnResize();
 	}
 
 	return true;
@@ -139,7 +136,7 @@ void VulkanRenderer::SubmitGraphicsQueue()
 
 	graphicsUnit_.GetGraphicsQueue().Submit(
 		bdvk::PipelineStage::ColourOutput
-		, commandBuffers_[currentRenderIndex_]
+		, *commandBuffers_[currentRenderIndex_]
 		, { swapchain_.GetImageAcquiredSemaphores()[currentRenderIndex_] }
 		, { swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_] }
 		, swapchain_.GetFences()[currentRenderIndex_]
@@ -161,38 +158,21 @@ bool VulkanRenderer::Present(uint32_t nextImageIndex)
 void VulkanRenderer::OnResize() {
 	swapchain_.Recreate();
 	currentRenderIndex_ = 0;
-	camera_.SetViewArea({ swapchain_.GetSize().width, swapchain_.GetSize().height });
+	camera_.SetViewArea(swapchain_.GetSize());
 	camera_.UpdatePerspective();
 
 	SetupRenderArea();
 }
 
 
-void VulkanRenderer::SetupRenderArea() {
-	const vk::Extent2D renderExtent = graphicsUnit_.GetSurfaceCapabilities(renderSurface_).currentExtent;
-
-	viewport_
-		.setWidth(static_cast<float>(renderExtent.width))
-		.setHeight(static_cast<float>(renderExtent.height))
-		.setX(0)
-		.setY(0)
-		.setMinDepth(0.0f)
-		.setMaxDepth(1.0f);
-
-
-	scissor_
-		.setExtent(renderExtent)
-		.setOffset({ 0, 0 });
+void VulkanRenderer::SetupRenderArea() 
+{
+	renderSurface_.Resize();
 }
 
 
 bool VulkanRenderer::Update()
 {
-	Render();
+	if (!Render()) LOG_INFO("FAILED");
 	return true;
-}
-
-void VulkanRenderer::WaitFinishRender() const
-{
-	graphicsUnit_.GetLogical().waitIdle();
 }

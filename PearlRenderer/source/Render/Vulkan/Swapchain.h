@@ -9,23 +9,25 @@
 
 namespace PEARL_NAMESPACE
 {
+	class Fence;
+	class Semaphore;
+
 	class Swapchain
 	{
 	public:
 		Swapchain(const GraphicsUnit& graphicsUnit, const RenderPass& renderPass, const RenderSurface& renderSurface);
 		~Swapchain();
 
-		[[nodiscard]] const vk::SwapchainKHR& Get() const { return swapchain_; }
 		[[nodiscard]] uint32_t GetImageCount() const { return swapchainImageCount_; }
 		[[nodiscard]] uint32_t GetNextImageIndex(uint32_t currentIndex) const;
 
 		[[nodiscard]] std::vector<FrameBuffer*> GetFramebuffers() { return frameBuffers_; }
 
-		[[nodiscard]] std::vector<vk::Semaphore>& GetImageAcquiredSemaphores() { return imageAcquiredSemaphore_; }
-		[[nodiscard]] std::vector<vk::Semaphore>& GetDrawCompletedSemaphores() { return drawCompleteSemaphore_; }
-		[[nodiscard]] std::vector<vk::Fence>& GetFences() { return fences_; }
+		[[nodiscard]] std::vector<Semaphore*>& GetImageAcquiredSemaphores() { return imageAcquiredSemaphore_; }
+		[[nodiscard]] std::vector<Semaphore*>& GetDrawCompletedSemaphores() { return drawCompleteSemaphore_; }
+		[[nodiscard]] std::vector<Fence*>& GetFences() { return fences_; }
 
-		[[nodiscard]] vk::Extent2D GetSize() const { return size_; }
+		[[nodiscard]] glm::vec2 GetSize() const { return { size_.width, size_.height }; }
 
 		void Recreate();
 
@@ -37,7 +39,7 @@ namespace PEARL_NAMESPACE
 		void CreateSynchronization();
 
 	private:
-		vk::SwapchainKHR swapchain_{};
+		class vk::SwapchainKHR swapchain_{};
 
 		const GraphicsUnit& graphicsUnit_;
 		const RenderPass& renderPass_;
@@ -45,17 +47,18 @@ namespace PEARL_NAMESPACE
 
 		std::vector<Image*> swapchainImages_{};
 		std::vector<FrameBuffer*> frameBuffers_{};
-		std::vector<vk::Fence> fences_{};
-		std::vector<vk::Semaphore> imageAcquiredSemaphore_{};
-		std::vector<vk::Semaphore> drawCompleteSemaphore_{};
-		// std::vector<int> t_;
+
+		// Syncro object currently raw pointers to allow storing unknown amount. Should look into setting this through constexpr or something to allow initialisation earlier.
+		// TODO -> Move getting numbere of images to use outside of swapchain (However swapchain can choose a different amount anyway... Then pass to a semaphore manager class that will create the amount needed.
+		std::vector<Fence*> fences_{};
+		std::vector<Semaphore*> imageAcquiredSemaphore_{};
+		std::vector<Semaphore*> drawCompleteSemaphore_{};
 
 		// Swapchain settings
 		uint32_t swapchainImageCount_ = 3;
 		vk::Format swapchainImageFormat_{};
 		vk::SurfaceTransformFlagBitsKHR swapchainTransform_{};
 		vk::PresentModeKHR swapchainPresentMode_{};
-
 
 		vk::Extent2D size_;
 

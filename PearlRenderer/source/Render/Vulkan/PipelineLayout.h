@@ -10,8 +10,6 @@ namespace PEARL_NAMESPACE
 		PipelineLayout(const GraphicsUnit& graphicsUnit);
 		~PipelineLayout();
 
-		[[nodiscard]] const vk::PipelineLayout& Get() const { return pipelineLayout_; }
-
 		std::vector<vk::DescriptorSet> AllocateDescriptorSet() const;
 
 	private:
@@ -23,10 +21,13 @@ namespace PEARL_NAMESPACE
 	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		vk::PipelineLayout pipelineLayout_;
-		std::vector<vk::DescriptorSetLayout> descriptorSetLayouts_;
-		std::vector<vk::PushConstantRange> pushConstantRanges_;
-		vk::DescriptorPool descriptorPool_;
+		class vk::PipelineLayout pipelineLayout_;
+		std::vector<class vk::DescriptorSetLayout> descriptorSetLayouts_;
+		std::vector<struct vk::PushConstantRange> pushConstantRanges_;
+		class vk::DescriptorPool descriptorPool_;
+
+		friend class CommandBuffer;
+		friend class GraphicsPipeline;
 	};
 }
 

@@ -11,7 +11,7 @@ namespace PEARL_NAMESPACE {
 		~DescriptorSets();
 
 	private:
-		std::vector<vk::DescriptorSet> descriptorSets_;
+		std::vector<class vk::DescriptorSet> descriptorSets_;
 		// Consider moving this to a map and having descriptors keys being the shader which it describes.
 		// This allows shader to be specified on a mesh and the renderer can set up thee correct descriptor by using it as a key.
 

@@ -9,9 +9,9 @@
 #include "Render/Vulkan/PipelineLayout.h"
 #include "Render/Vulkan/RenderPass.h"
 #include "Render/Vulkan/Swapchain.h"
+#include "Render/Vulkan/DescriptorSets.h"
 #include "Window/RenderSurface.h"
 #include "Window/Window.h"
-#include "Render/Vulkan/DescriptorSets.h"
 
 
 class VulkanRenderer
@@ -23,7 +23,6 @@ public:
 	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
 	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
 	bool Update();
-	void WaitFinishRender() const;
 
 private:
 	void BuildCommandBufferCommands(uint32_t index);
@@ -38,6 +37,7 @@ private:
 
 private:
 	const pearl::Window& window_;
+
 	pearl::RendererInstance instance_;
 	pearl::GraphicsUnit graphicsUnit_;
 	pearl::RenderSurface renderSurface_;
@@ -50,15 +50,11 @@ private:
 	pearl::DescriptorSets descriptorSets_;
 
 	pearl::CommandPool commandPool_;
-	std::vector<pearl::CommandBuffer> commandBuffers_;
+	std::vector<pearl::CommandBuffer*> commandBuffers_;
 
 	uint32_t currentRenderIndex_ = 0;
 
 	std::vector<pearl::typesRender::Mesh*> meshes_;
-	
-	//TODO -- Consider moving this -> Move to a render area class.
-	vk::Rect2D scissor_;
-	vk::Viewport viewport_;
 
 	Camera camera_;
 }; 

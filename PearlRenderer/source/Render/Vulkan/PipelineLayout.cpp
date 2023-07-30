@@ -1,6 +1,7 @@
 #include "PipelineLayout.h"
 #include "PearlCore.h"
 #include "Render/Types/TypesRender.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -16,14 +17,14 @@ PipelineLayout::PipelineLayout(const GraphicsUnit& graphicsUnit)
 
 PipelineLayout::~PipelineLayout()
 {
-	graphicsUnit_.GetLogical().destroyDescriptorPool(descriptorPool_);
+	graphicsUnit_.logicalUnit_.destroyDescriptorPool(descriptorPool_);
 
 	for (const vk::DescriptorSetLayout layout : descriptorSetLayouts_)
 	{
-		graphicsUnit_.GetLogical().destroyDescriptorSetLayout(layout);
+		graphicsUnit_.logicalUnit_.destroyDescriptorSetLayout(layout);
 	}
 
-	graphicsUnit_.GetLogical().destroyPipelineLayout(pipelineLayout_);
+	graphicsUnit_.logicalUnit_.destroyPipelineLayout(pipelineLayout_);
 }
 
 
@@ -64,7 +65,7 @@ void PipelineLayout::CreateDescriptorSetLayout()
 		.setBindingCount(static_cast<uint32_t>(bindings.size()))
 		.setPBindings(bindings.data());
 
-	descriptorSetLayouts_.push_back(graphicsUnit_.GetLogical().createDescriptorSetLayout(descriptorSetLayoutInfo));
+	descriptorSetLayouts_.push_back(graphicsUnit_.logicalUnit_.createDescriptorSetLayout(descriptorSetLayoutInfo));
 }
 
 
@@ -83,7 +84,7 @@ void PipelineLayout::CreateDescriptorSetPool()
 	                                                        .setPPoolSizes(poolSizes.data())
 	                                                        .setMaxSets(10);
 
-	descriptorPool_ = graphicsUnit_.GetLogical().createDescriptorPool(descriptorPoolInfo);
+	descriptorPool_ = graphicsUnit_.logicalUnit_.createDescriptorPool(descriptorPoolInfo);
 }
 
 
@@ -107,7 +108,7 @@ void PipelineLayout::CreatePipelineLayout()
 	                                                        .setPushConstantRangeCount(static_cast<uint32_t>(pushConstantRanges_.size()))
 	                                                        .setPPushConstantRanges(pushConstantRanges_.data());
 
-	pipelineLayout_ = graphicsUnit_.GetLogical().createPipelineLayout(pipelineLayoutInfo);
+	pipelineLayout_ = graphicsUnit_.logicalUnit_.createPipelineLayout(pipelineLayoutInfo);
 }
 
 
@@ -118,7 +119,7 @@ std::vector<vk::DescriptorSet> PipelineLayout::AllocateDescriptorSet() const
 		.setPSetLayouts(descriptorSetLayouts_.data())
 		.setDescriptorSetCount((uint32_t)descriptorSetLayouts_.size());
 
-	return graphicsUnit_.GetLogical().allocateDescriptorSets(setAllocateInfo);
+	return graphicsUnit_.logicalUnit_.allocateDescriptorSets(setAllocateInfo);
 	return{};
 }
 

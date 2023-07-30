@@ -12,8 +12,6 @@ namespace PEARL_NAMESPACE
 		FrameBuffer(const GraphicsUnit& graphicsUnit, const RenderPass& renderpass, const std::vector<Image>& images);
 		~FrameBuffer();
 
-		[[nodiscard]] vk::Framebuffer Get() const { return framebuffer_; }
-
 	private:
 		void CreateDepthResources();
 		void CreateMultiSampleResources();
@@ -21,17 +19,19 @@ namespace PEARL_NAMESPACE
 	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		std::vector<vk::ImageView> attachments_;
+		std::vector<class vk::ImageView> attachments_;
 
 		Image depthImage_;
-		vk::ImageView depthImageView_;
-		vk::DeviceMemory depthMemory_;
+		class vk::ImageView depthImageView_;
+		class vk::DeviceMemory depthMemory_;
 
 		Image multiSampleImage_;
-		vk::ImageView multiSampleImageView_;
-		vk::DeviceMemory multiSampleMemory_;
+		class vk::ImageView multiSampleImageView_;
+		class vk::DeviceMemory multiSampleMemory_;
 
-		vk::Framebuffer framebuffer_;
+		class vk::Framebuffer framebuffer_;
+
+		friend class CommandBuffer;
 	};
 }
 

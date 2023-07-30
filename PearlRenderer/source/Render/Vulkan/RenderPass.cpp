@@ -1,6 +1,7 @@
 #include "RenderPass.h"
 
 #include "GraphicsUnit.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 

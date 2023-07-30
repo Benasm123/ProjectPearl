@@ -3,6 +3,11 @@
 #include "Render/Vulkan/BDVK/BDVK_enums.h"
 
 
+namespace vk {
+	class Buffer;
+	class DeviceMemory;
+}
+
 namespace PEARL_NAMESPACE::typesRender
 {
 	struct PushConstant

@@ -2,7 +2,6 @@
 
 #include <memory>
 #include "Core/Logger.h"
-#include "Render/Generic/Renderer.h"
 #include "Render/Vulkan/Renderer/VulkanRenderer.h"
 #include "Collisions/SphereCollider.h"
 #include "Collisions/BoxCollider.h"
@@ -12,6 +11,13 @@
 #ifdef __cplusplus
 extern "C"
 #endif
+#include <iostream>
+
+constexpr double targetFPS = 4000;
+constexpr double renderTime = 1.0 / targetFPS;
+
+constexpr double targetHZ = 60000.0;
+constexpr double physicsTime = 1.0 / targetHZ;
 
 int main(int argc, char* argv[])
 {
@@ -30,7 +36,7 @@ int main(int argc, char* argv[])
 	mesh.position.x = 0;
 
 	PhysicsObject phys{};
-	phys.mass_ = 6.0e12f;
+	phys.mass_ = 6.0e11f;
 	GravitationalPull pull{ phys };
 	pull.SetCentre(mesh.position);
 	pull.SetIsGlobal(false);
@@ -41,11 +47,14 @@ int main(int argc, char* argv[])
 	sphereColliders.push_back(&planet);
 
 	pearl::typesRender::Mesh moon;
-	moon.data = utils::GetSpherePoints(4.0f, 1);
+	moon.data = utils::GetSpherePoints(7.0f, 1);
 	moon.position = { 1100, 0, 0 };
 	PhysicsObject moonPhysics{};
-	moonPhysics.mass_ = 6.0e10f;
-	moonPhysics.velocity_.y = -100;
+	moonPhysics.mass_ = 6.0e8f;
+	moonPhysics.velocity_.y = 2000;
+
+	SphereCollider moonCol{ 7.0f, moon.position };
+	sphereColliders.push_back(&moonCol);
 
 	// ORB OBJECT
 
@@ -60,19 +69,19 @@ int main(int argc, char* argv[])
 			: coll{ 20.0f, mesh.position }
 			, pull{phys}
 		{
-			mesh.data = utils::GetSpherePoints(20.0f, 0);
+			mesh.data = utils::GetSpherePoints(20.0f, 1);
 			mesh.position.x = (float)(rand() % 500) - 250.0f;
 			mesh.position.y = (float)(rand() % 500) - 250.0f;
 			mesh.position.z = (float)(rand() % 500) - 250.0f;
 			mesh.position = glm::normalize(mesh.position) * 1520.0f;
 			mesh.position = { 1000, 0, 0 };
 
-			phys.mass_ = 7.3e7;
+			phys.mass_ = 7.3e10;
 
 			phys.velocity_.x += (rand() % 8000) - 4000;
 			phys.velocity_.y += (rand() % 8000) - 4000;
 			phys.velocity_.z += (rand() % 8000) - 4000;
-			phys.velocity_ = { 0, 5000, 0 };
+			phys.velocity_ = { 0, 30000, 0 };
 
 			pull.SetCentre(mesh.position);
 			pull.SetIsGlobal(false);
@@ -113,6 +122,7 @@ int main(int argc, char* argv[])
 	}
 
 	moonPhysics.pulls.push_back(&orbs[0]->pull);
+	moonPhysics.pulls.push_back(&pull);
 	renderer.DrawMesh(moon);
 
 	for (int i = 0; i< num; i++)
@@ -129,25 +139,51 @@ int main(int argc, char* argv[])
 
 	auto oldTime = std::chrono::system_clock::now();
 
+	uint32_t frameCount = 0;
+	double deltaCount = 0.0;
+	double renderCount = 0.0;
+	double physicsCount = 0.0;
+
 	bool running = true;
 	while (running)
 	{
 		auto currentTime = std::chrono::system_clock::now();
 		double deltaTime = static_cast<double>((std::chrono::duration_cast<std::chrono::microseconds>(currentTime - oldTime)).count()) / 1e+6;
+		if (deltaTime == 0.0) continue;
 		if ( deltaTime > 0.1 ) deltaTime = 0.1;
 		oldTime = currentTime;
 
-		moonPhysics.position_ = moon.position;
-		moonPhysics.Update((float)deltaTime);
-		moon.position += moonPhysics.velocity_ * (float)deltaTime;
-		
-		for (Orb* orb : orbs)
-		{
-			orb->Update((float)deltaTime, sphereColliders);
+		physicsCount += deltaTime;
+		if (physicsCount >= physicsTime) {
+			moonPhysics.position_ = moon.position; 
+			moonCol.SetCentre(moon.position);
+			moonPhysics.Update(physicsTime / 100.0f);
+			moon.position += moonPhysics.velocity_ * ((float)physicsTime / 100.0f);
+
+			physicsCount -= physicsTime;
+
+			for (Orb* orb : orbs)
+			{
+				orb->Update((physicsTime / 100.0f), sphereColliders);
+			}
 		}
 
-		running = window.Update();
+		deltaCount += deltaTime;
+		frameCount++;
+		if (deltaCount >= 1.0) {
+			std::cout << "\r" << frameCount;;
+			deltaCount -= 1.0;
+			frameCount = 0;
+		}
+
+
+		//renderCount += deltaTime;
+		//if (renderCount >= renderTime) {
 		renderer.Update();
+		renderCount -= renderTime;
+		//}
+
+		running = window.Update();
 	}
 
 	renderer.DestroyMesh(mesh);

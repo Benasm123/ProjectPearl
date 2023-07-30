@@ -6,6 +6,8 @@ namespace PEARL_NAMESPACE
 	class GraphicsUnit;
 	class Swapchain;
 	class CommandBuffer;
+	class Fence;
+	class Semaphore;
 
 	class Queue
 	{
@@ -14,14 +16,14 @@ namespace PEARL_NAMESPACE
 		Queue(const GraphicsUnit& graphicsUnit, uint32_t familyIndex, uint32_t numberOfQueue=1);
 		~Queue();
 
-		void Submit(bdvk::PipelineStage stage, const CommandBuffer& commandBuffer, const std::vector<vk::Semaphore>& waitSemaphores, const std::vector<vk::Semaphore>& signalSemaphores, vk::Fence fence);
-		bool Present(const Swapchain& swapchain, uint32_t imageIndex, const std::vector<vk::Semaphore>& waitSemaphores);
+		void Submit(bdvk::PipelineStage stage, const CommandBuffer& commandBuffer, const std::vector<Semaphore*>& waitSemaphores, const std::vector<Semaphore*>& signalSemaphores, Fence* fence);
+		bool Present(const Swapchain& swapchain, uint32_t imageIndex, const std::vector<Semaphore*>& waitSemaphores);
 
 	private:
-		vk::Queue NextQueue();
+		class vk::Queue NextQueue();
 
 	private:
-		std::vector<vk::Queue> queues_;
+		std::vector<class vk::Queue> queues_;
 
 		uint32_t currentQueueIndex{};
 	};
