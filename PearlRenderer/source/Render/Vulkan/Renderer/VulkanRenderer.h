@@ -13,6 +13,7 @@
 #include "Window/RenderSurface.h"
 #include "Window/Window.h"
 
+class StaticMesh;
 
 class VulkanRenderer
 {
@@ -20,8 +21,8 @@ public:
 	VulkanRenderer(const pearl::Window& window);
 	~VulkanRenderer();
 
-	virtual void DrawMesh(pearl::typesRender::Mesh& mesh);
-	void DestroyMesh(const pearl::typesRender::Mesh& mesh);
+	void DrawMesh(StaticMesh& mesh);
+	void DestroyMesh(const StaticMesh& mesh);
 	bool Update();
 
 private:
@@ -54,7 +55,7 @@ private:
 
 	uint32_t currentRenderIndex_ = 0;
 
-	std::vector<pearl::typesRender::Mesh*> meshes_;
+	std::vector<StaticMesh*> meshes_;
 
 	Camera camera_;
 }; 

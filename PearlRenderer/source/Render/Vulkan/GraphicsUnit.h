@@ -6,9 +6,11 @@
 #include "Queue.h"
 #include "BDVK/BDVK_enums.h"
 
+class StaticMesh;
 
 namespace PEARL_NAMESPACE
 {
+
 	// Class to manage the GPU, by default select the best gpu.
 	class GraphicsUnit
 	{
@@ -28,7 +30,7 @@ namespace PEARL_NAMESPACE
 
 		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, bdvk::BufferType usage);
 
-		void DestroyMesh(const pearl::typesRender::Mesh& mesh);
+		void DestroyMesh(const StaticMesh& mesh);
 
 	private:
 		[[nodiscard]] struct vk::PhysicalDeviceLimits GetLimits() const;

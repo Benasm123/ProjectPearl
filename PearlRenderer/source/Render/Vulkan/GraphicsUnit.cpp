@@ -4,6 +4,7 @@
 #include "Fence.h"
 #include "BDVK/BDVK_internal.h"
 #include <iostream>
+#include <Core/StaticMesh.h>
 
 using namespace PEARL_NAMESPACE;
 
@@ -253,15 +254,15 @@ PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(
 	return bufferResource;
 }
 
-void PEARL_NAMESPACE::GraphicsUnit::DestroyMesh(const pearl::typesRender::Mesh& mesh)
+void PEARL_NAMESPACE::GraphicsUnit::DestroyMesh(const StaticMesh& mesh)
 {
-	logicalUnit_.unmapMemory(mesh.vertexResource.memory);
-	logicalUnit_.freeMemory(mesh.vertexResource.memory);
-	logicalUnit_.destroyBuffer(mesh.vertexResource.buffer);
+	logicalUnit_.unmapMemory(mesh.vertexResource_.memory);
+	logicalUnit_.freeMemory(mesh.vertexResource_.memory);
+	logicalUnit_.destroyBuffer(mesh.vertexResource_.buffer);
 
-	logicalUnit_.unmapMemory(mesh.indexResource.memory);
-	logicalUnit_.freeMemory(mesh.indexResource.memory);
-	logicalUnit_.destroyBuffer(mesh.indexResource.buffer);
+	logicalUnit_.unmapMemory(mesh.indexResource_.memory);
+	logicalUnit_.freeMemory(mesh.indexResource_.memory);
+	logicalUnit_.destroyBuffer(mesh.indexResource_.buffer);
 }
 
 void GraphicsUnit::DestroySwapchain(const vk::SwapchainKHR swapchainToDestroy) const

@@ -8,6 +8,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <Render/Vulkan/BDVK/BDVK_enums.h>
+#include <Core/StaticMesh.h>
 #pragma warning(pop)
 
 
@@ -40,33 +41,28 @@ VulkanRenderer::~VulkanRenderer()
 	graphicsUnit_.WaitIdle();
 };
 
-///
-/// Prepare a mesh to be rendered, adding it to list of meshes and creating its vertex and index buffers.
-/// @param mesh The mesh which is to rendered.
-///
-void VulkanRenderer::DrawMesh(pearl::typesRender::Mesh& mesh)
+void VulkanRenderer::DrawMesh(StaticMesh& mesh)
 {
 	// TODO -- this should be in a mesh class. should also look into abstracting all vk types out to reduce dependancy.
 	// turn meshes into handle that will then have a look up for all needed renderer types?
-	mesh.vertexResource = graphicsUnit_.CreateBufferResource(mesh.data.points.size() * sizeof(mesh.data.points[0]), bdvk::BufferType::Vertex);
-	std::memcpy(mesh.vertexResource.dataPtr, mesh.data.points.data(), mesh.data.points.size() * sizeof(mesh.data.points[0]));
+	mesh.vertexResource_ = graphicsUnit_.CreateBufferResource(mesh.data_.points.size() * sizeof(mesh.data_.points[0]), bdvk::BufferType::Vertex);
+	std::memcpy(mesh.vertexResource_.dataPtr, mesh.data_.points.data(), mesh.data_.points.size() * sizeof(mesh.data_.points[0]));
 
-	
-	mesh.indexResource = graphicsUnit_.CreateBufferResource(mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]), bdvk::BufferType::Index);
-	std::memcpy(mesh.indexResource.dataPtr, mesh.data.triangles.data(), mesh.data.triangles.size() * sizeof(mesh.data.triangles[0]));
-			
+
+	mesh.indexResource_ = graphicsUnit_.CreateBufferResource(mesh.data_.triangles.size() * sizeof(mesh.data_.triangles[0]), bdvk::BufferType::Index);
+	std::memcpy(mesh.indexResource_.dataPtr, mesh.data_.triangles.data(), mesh.data_.triangles.size() * sizeof(mesh.data_.triangles[0]));
+
 	meshes_.push_back(&mesh);
 
-	LOG_TRACE("Drawing mesh with {} triangles", mesh.data.triangles.size());
+	LOG_TRACE("Drawing mesh with {} triangles", mesh.data_.triangles.size());
 }
 
-void VulkanRenderer::DestroyMesh(const pearl::typesRender::Mesh& mesh)
+void VulkanRenderer::DestroyMesh(const StaticMesh& mesh)
 {
 	graphicsUnit_.WaitIdle();
 
 	graphicsUnit_.DestroyMesh(mesh);
 }
-
 
 void VulkanRenderer::BuildCommandBufferCommands(const uint32_t index)
 {
@@ -86,7 +82,7 @@ void VulkanRenderer::BuildCommandBufferCommands(const uint32_t index)
 
 	for (auto& mesh : meshes_)
 	{
-		currentBuffer.PushConstants(graphicsPipelineLayout_, pearl::typesRender::PushConstantInfo{bdvk::ShaderType::Vertex, mesh->mvp});
+		currentBuffer.PushConstants(graphicsPipelineLayout_, pearl::typesRender::PushConstantInfo{bdvk::ShaderType::Vertex, mesh->mvp_});
 
 		currentBuffer.DrawIndexed(*mesh);
 	}
@@ -125,13 +121,13 @@ void VulkanRenderer::SubmitGraphicsQueue()
 {
 
 	// TODO -> This needs to be moved to a mesh update function once we have a real mesh class and updated in update.
-	for (pearl::typesRender::Mesh* mesh : meshes_)
+	for (StaticMesh* mesh : meshes_)
 	{
 		glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
 
-		mesh->modelMatrix = glm::translate(glm::mat4(1.0f), mesh->position);
+		mesh->modelMatrix_ = glm::translate(glm::mat4(1.0f), mesh->position_);
 
-		mesh->mvp.mvp = mvp * mesh->modelMatrix;
+		mesh->mvp_.mvp = mvp * mesh->modelMatrix_;
 	}
 
 	graphicsUnit_.GetGraphicsQueue().Submit(
@@ -173,6 +169,6 @@ void VulkanRenderer::SetupRenderArea()
 
 bool VulkanRenderer::Update()
 {
-	if (!Render()) LOG_INFO("FAILED");
+	Render();
 	return true;
 }

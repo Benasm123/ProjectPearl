@@ -2,6 +2,7 @@
 #include "PearlCore.h"
 
 struct vk::Rect2D;
+class StaticMesh;
 
 namespace PEARL_NAMESPACE
 {
@@ -34,7 +35,7 @@ namespace PEARL_NAMESPACE
 
 		void PushConstants(const PipelineLayout& pipelineLayout, const pearl::typesRender::PushConstantInfo& pushConstantInfo);
 
-		void DrawIndexed(const typesRender::Mesh& mesh);
+		void DrawIndexed(const StaticMesh& mesh);
 
 	private:
 		class vk::CommandBuffer commandBuffer_;

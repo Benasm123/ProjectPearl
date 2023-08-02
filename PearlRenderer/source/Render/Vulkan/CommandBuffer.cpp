@@ -4,6 +4,7 @@
 #include "DescriptorSets.h"
 #include "CommandPool.h"
 #include "BDVK/BDVK_internal.h"
+#include "Core/StaticMesh.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -86,12 +87,12 @@ void PEARL_NAMESPACE::CommandBuffer::PushConstants(const PipelineLayout& pipelin
 	commandBuffer_.pushConstants(pipelineLayout.pipelineLayout_, (vk::ShaderStageFlagBits)pushConstantInfo.shaderStage, 0, sizeof(pushConstantInfo.data), &pushConstantInfo.data);
 }
 
-void PEARL_NAMESPACE::CommandBuffer::DrawIndexed(const typesRender::Mesh& mesh)
+void PEARL_NAMESPACE::CommandBuffer::DrawIndexed(const StaticMesh& mesh)
 {
 	constexpr vk::DeviceSize offset[] = { 0 };
-	commandBuffer_.bindVertexBuffers(0, 1, &mesh.vertexResource.buffer, offset);
+	commandBuffer_.bindVertexBuffers(0, 1, &mesh.vertexResource_.buffer, offset);
 
-	commandBuffer_.bindIndexBuffer(mesh.indexResource.buffer, 0, vk::IndexType::eUint32);
+	commandBuffer_.bindIndexBuffer(mesh.indexResource_.buffer, 0, vk::IndexType::eUint32);
 
-	commandBuffer_.drawIndexed(((uint32_t)mesh.data.triangles.size() * 3u), 1, 0, 0, 0);
+	commandBuffer_.drawIndexed(((uint32_t)mesh.data_.triangles.size() * 3u), 1, 0, 0, 0);
 }
