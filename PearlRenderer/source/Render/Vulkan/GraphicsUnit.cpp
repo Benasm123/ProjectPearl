@@ -1,13 +1,18 @@
 #include "GraphicsUnit.h"
 
 #include "Window/RenderSurface.h"
+#include "Fence.h"
+#include "BDVK/BDVK_internal.h"
+#include <iostream>
+#include <Core/StaticMesh.h>
 
 using namespace PEARL_NAMESPACE;
 
-GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalDevice device)
+GraphicsUnit::GraphicsUnit(const RendererInstance& instance)
 	: instance_(instance)
-	, graphicsUnit_(device)
 {
+	graphicsUnit_ = instance_.FindBestGraphicsUnit();
+
 	requiredFeatures_.setFillModeNonSolid(VK_TRUE);
 
 	if ( !graphicsUnit_ ) throw std::exception("Invalid graphics unit");
@@ -18,7 +23,7 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 	const std::vector<vk::QueueFamilyProperties> queueFamilyProperties = graphicsUnit_.getQueueFamilyProperties();
 
 	uint32_t index = 0;
-	for (vk::QueueFamilyProperties queueFamilyProperty : queueFamilyProperties )
+	for (const vk::QueueFamilyProperties& queueFamilyProperty : queueFamilyProperties )
 	{
 		if ( queueFamilyProperty.queueFlags & vk::QueueFlagBits::eGraphics
 			&& graphicsQueueIndex_ == ~0u )
@@ -93,16 +98,31 @@ GraphicsUnit::GraphicsUnit(const RendererInstance& instance, const vk::PhysicalD
 
 	name_ = std::string(graphicsUnit_.getProperties().deviceName.data());
 
-	for (uint32_t i = 0; i < Config::renderer::numberOfGraphicsQueuesToUse; i++)
-	{
-		graphicsQueues_.push_back(logicalUnit_.getQueue(graphicsQueueIndex_, i));
-	}
+	graphicsQueue_ = Queue(*this, graphicsQueueIndex_, Config::renderer::numberOfGraphicsQueuesToUse);
+	computeQueue_ = Queue(*this, computeQueueIndex_, Config::renderer::numberOfComputeQueuesToUse);
 }
 
 
 GraphicsUnit::~GraphicsUnit()
 {
 	logicalUnit_.destroy();
+}
+
+bool PEARL_NAMESPACE::GraphicsUnit::WaitForFences(Fence* fence)
+{
+	vk::Result result = logicalUnit_.waitForFences(fence->_internalFence_, VK_TRUE, 100);
+
+	if (result == vk::Result::eSuccess) {
+		logicalUnit_.resetFences(fence->_internalFence_);
+	}
+
+	return result == vk::Result::eSuccess;
+}
+
+
+void PEARL_NAMESPACE::GraphicsUnit::WaitIdle() 
+{
+	logicalUnit_.waitIdle();
 }
 
 
@@ -114,13 +134,13 @@ vk::PhysicalDeviceLimits GraphicsUnit::GetLimits() const
 
 vk::SurfaceCapabilitiesKHR GraphicsUnit::GetSurfaceCapabilities(const RenderSurface& surface) const
 {
-	return graphicsUnit_.getSurfaceCapabilitiesKHR(surface.Get());
+	return graphicsUnit_.getSurfaceCapabilitiesKHR(surface.surface_);
 }
 
 
 std::vector<vk::SurfaceFormatKHR> GraphicsUnit::GetSurfaceFormats(const RenderSurface& surface) const
 {
-	return graphicsUnit_.getSurfaceFormatsKHR(surface.Get());
+	return graphicsUnit_.getSurfaceFormatsKHR(surface.surface_);
 }
 
 
@@ -140,11 +160,11 @@ vk::SurfaceFormatKHR GraphicsUnit::GetBestSurfaceFormat(const RenderSurface& sur
 
 std::vector<vk::PresentModeKHR> GraphicsUnit::GetSurfacePresentModes(const RenderSurface& surface) const
 {
-	return graphicsUnit_.getSurfacePresentModesKHR(surface.Get());
+	return graphicsUnit_.getSurfacePresentModesKHR(surface.surface_);
 }
 
 
-uint32_t GraphicsUnit::GetMemoryIndexOfType(const vk::MemoryPropertyFlags memoryProperty) const
+uint32_t GraphicsUnit::GetMemoryIndexOfType(const vk::Flags<vk::MemoryPropertyFlagBits> memoryProperty) const
 {
 	const vk::PhysicalDeviceMemoryProperties props = graphicsUnit_.getMemoryProperties();
 	for (uint32_t i = 0; i < props.memoryTypeCount; i++)
@@ -178,8 +198,7 @@ void GraphicsUnit::DestroyRenderPass(const vk::RenderPass renderPass) const
 	logicalUnit_.destroyRenderPass(renderPass);
 }
 
-
-vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::Format format, vk::ImageAspectFlagBits imageAspect) const
+vk::ImageView PEARL_NAMESPACE::GraphicsUnit::CreateImageView(const vk::Image image, const vk::Format format, vk::ImageAspectFlagBits imageAspect) const
 {
 	const vk::ImageViewCreateInfo imageViewInfo = vk::ImageViewCreateInfo()
 	                                              .setFlags({})
@@ -193,25 +212,24 @@ vk::ImageView GraphicsUnit::CreateImageView(const vk::Image image, const vk::For
 }
 
 
-vk::Queue GraphicsUnit::GetGraphicsQueue()
+Queue GraphicsUnit::GetGraphicsQueue()
 {
-	// graphicsQueuePos_++;
-	// graphicsQueuePos_ %= Config::renderer::numberOfGraphicsQueuesToUse;
-	return graphicsQueues_[graphicsQueuePos_];
+	return graphicsQueue_;
 }
 
-vk::Buffer GraphicsUnit::CreateBuffer(size_t size, vk::BufferUsageFlags usageFlags, vk::SharingMode sharingMode)
+vk::Buffer GraphicsUnit::CreateBuffer(size_t size, bdvk::BufferType usageFlags, vk::SharingMode sharingMode)
 {
+
 	const vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
 		.setFlags({})
 		.setSize(size)
 		.setSharingMode(sharingMode)
-		.setUsage(usageFlags);
+		.setUsage((vk::BufferUsageFlagBits)usageFlags);
 
 	return logicalUnit_.createBuffer(bufferInfo);
 }
 
-vk::DeviceMemory GraphicsUnit::AllocateMemory(vk::MemoryRequirements requirements, vk::MemoryPropertyFlags memoryFlags)
+vk::DeviceMemory GraphicsUnit::AllocateMemory(vk::MemoryRequirements requirements, vk::Flags<vk::MemoryPropertyFlagBits> memoryFlags)
 {
 	const vk::MemoryAllocateInfo allocationInfo = vk::MemoryAllocateInfo()
 		.setAllocationSize(requirements.size)
@@ -220,13 +238,13 @@ vk::DeviceMemory GraphicsUnit::AllocateMemory(vk::MemoryRequirements requirement
 	return logicalUnit_.allocateMemory(allocationInfo);
 }
 
-void* GraphicsUnit::BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, vk::DeviceSize offset, vk::DeviceSize size)
+void* GraphicsUnit::BindAndMapBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, uint64_t offset, uint64_t size)
 {
 	logicalUnit_.bindBufferMemory(buffer, memory, 0);
 	return logicalUnit_.mapMemory(memory, offset, size, {});
 }
 
-PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(size_t size, vk::BufferUsageFlags usage) 
+PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(size_t size, bdvk::BufferType usage)
 {
 	PEARL_NAMESPACE::typesRender::BufferResource bufferResource;
 	bufferResource.buffer = CreateBuffer(size, usage);
@@ -234,6 +252,17 @@ PEARL_NAMESPACE::typesRender::BufferResource GraphicsUnit::CreateBufferResource(
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 	bufferResource.dataPtr = BindAndMapBufferMemory(bufferResource.buffer, bufferResource.memory);
 	return bufferResource;
+}
+
+void PEARL_NAMESPACE::GraphicsUnit::DestroyMesh(const StaticMesh& mesh)
+{
+	logicalUnit_.unmapMemory(mesh.vertexResource_.memory);
+	logicalUnit_.freeMemory(mesh.vertexResource_.memory);
+	logicalUnit_.destroyBuffer(mesh.vertexResource_.buffer);
+
+	logicalUnit_.unmapMemory(mesh.indexResource_.memory);
+	logicalUnit_.freeMemory(mesh.indexResource_.memory);
+	logicalUnit_.destroyBuffer(mesh.indexResource_.buffer);
 }
 
 void GraphicsUnit::DestroySwapchain(const vk::SwapchainKHR swapchainToDestroy) const

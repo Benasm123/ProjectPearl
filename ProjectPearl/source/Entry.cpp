@@ -2,162 +2,130 @@
 
 #include <memory>
 #include "Core/Logger.h"
-#include "Render/Generic/Renderer.h"
-#include "Render/Vulkan/Renderer/VulkanRenderer2D.h"
+#include "Render/Vulkan/Renderer/VulkanRenderer.h"
 #include "Collisions/SphereCollider.h"
 #include "Collisions/BoxCollider.h"
 #include "PhysicsObject.h"
 #include "GravitationalPull.h"
+#include "Core/StaticMesh.h"
 
 #ifdef __cplusplus
 extern "C"
 #endif
+#include <iostream>
+#include "../TestClasses/SphereObject.h"
+
+constexpr double targetFPS = 500;
+constexpr double renderTime = 1.0 / targetFPS;
+
+constexpr double targetHZ = 60000.0;
+constexpr double physicsTime = 1.0 / targetHZ;
 
 int main(int argc, char* argv[])
 {
-	int num = 1;
+	int num = 10;
 
 	spdlog::set_level(spdlog::level::trace);
 
 	pearl::Window window("Pearl Engine", 1200, 1000);
-	auto renderer = VulkanRenderer2D(window);
+	auto renderer = VulkanRenderer(window);
 
 	// PLANET
-	pearl::typesRender::Mesh mesh;
-	mesh.data = utils::GetSpherePoints(70.0f, 3);
-	mesh.position.z = 0;
-	mesh.position.y = 0;
-	mesh.position.x = 0;
+	StaticMesh mesh{renderer, utils::GetSpherePoints(70.0f, 5)};
 
 	PhysicsObject phys{};
-	phys.mass_ = 6.0e12f;
 	GravitationalPull pull{ phys };
-	pull.SetCentre(mesh.position);
+	phys.mass_ = 6.0e11f;
+	pull.SetCentre(mesh.Position());
 	pull.SetIsGlobal(false);
 	
 	std::vector<SphereCollider*> sphereColliders{};
 
-	SphereCollider planet{ 70, mesh.position };
+	SphereCollider planet{ 70, mesh.Position()};
 	sphereColliders.push_back(&planet);
 
-	pearl::typesRender::Mesh moon;
-	moon.data = utils::GetSpherePoints(4.0f, 1);
-	moon.position = { 1100, 0, 0 };
+	StaticMesh moon{renderer, utils::GetSpherePoints(7.0f, 1) };
+	moon.SetPosition({ 1100.0f, 0.0f, 0.0f });
 	PhysicsObject moonPhysics{};
-	moonPhysics.mass_ = 6.0e10f;
-	moonPhysics.velocity_.y = -100;
+	moonPhysics.mass_ = 6.0e8f;
+	moonPhysics.velocity_.y = 2000;
 
-	// ORB OBJECT
+	SphereCollider moonCol{ 7.0f, moon.Position()};
+	sphereColliders.push_back(&moonCol);
 
-	struct Orb
-	{
-		pearl::typesRender::Mesh mesh;
-		SphereCollider coll;
-		PhysicsObject phys;
-		GravitationalPull pull;
-
-		Orb()
-			: coll{ 7.0f, mesh.position }
-			, pull{phys}
-		{
-			mesh.data = utils::GetSpherePoints(7.0f, 0);
-			mesh.position.x = (float)(rand() % 500) - 250.0f;
-			mesh.position.y = (float)(rand() % 500) - 250.0f;
-			mesh.position.z = (float)(rand() % 500) - 250.0f;
-			mesh.position = glm::normalize(mesh.position) * 1520.0f;
-			mesh.position = { 1000, 0, 0 };
-
-			phys.mass_ = 7.3e7;
-
-			phys.velocity_.x += (rand() % 8000) - 4000;
-			phys.velocity_.y += (rand() % 8000) - 4000;
-			phys.velocity_.z += (rand() % 8000) - 4000;
-			phys.velocity_ = { 0, 5000, 0 };
-
-			pull.SetCentre(mesh.position);
-			pull.SetIsGlobal(false);
-		}
-
-		void AddPulls(GravitationalPull* pulls)
-		{
-			phys.pulls.push_back(pulls);
-		}
-
-		void Update(float deltaTime, const std::vector<SphereCollider*>& sphereColliders)
-		{
-			coll.SetCentre(mesh.position);
-			phys.position_ = mesh.position;
-			pull.SetCentre(mesh.position);
-			phys.Update(deltaTime);
-			mesh.position += phys.velocity_ * deltaTime;
-
-			for (const auto& plan : sphereColliders)
-			{
-				if (coll.IsColliding(*plan))
-				{
-					glm::vec3 normal = glm::normalize(coll.GetCentre() - plan->GetCentre());
-					const glm::vec3 reflectionVector = phys.velocity_ - (2.0f * glm::dot(phys.velocity_, normal) * normal);
-					phys.velocity_ = reflectionVector;
-					mesh.position += deltaTime * 2 * phys.velocity_;
-				}
-			}
-		}
-	};
 	
-	std::vector<Orb*> orbs;
+	std::vector<SphereObject*> orbs;
 	for (int i = 0; i < num; i++)
 	{
-		auto orb = new Orb();
-		renderer.DrawMesh(orb->mesh);
+		auto orb = new SphereObject(renderer, 5.0f, 2);
+		orb->Transform().position = { 1000, 0 + (i * 100), 0};
+		orb->Physics().velocity_ = { 0, 100000, 0 };
 		orbs.push_back(orb);
 	}
 
-	moonPhysics.pulls.push_back(&orbs[0]->pull);
-	renderer.DrawMesh(moon);
+	moonPhysics.pulls.push_back(&orbs[0]->Gravity());
+	moonPhysics.pulls.push_back(&pull);
 
 	for (int i = 0; i< num; i++)
 	{
-		orbs[i]->AddPulls(&pull);
-		// for (int j  = 0; j < num; j++)
-		// {
-		// 	if ( i == j ) continue;
-		// 	orbs[i]->AddPulls(&orbs[j]->pull);
-		// }
+		orbs[i]->Physics().pulls.push_back(&pull);
 	}
 
-	renderer.DrawMesh(mesh);
-
 	auto oldTime = std::chrono::system_clock::now();
+
+	uint32_t frameCount = 0;
+	double deltaCount = 0.0;
+	double renderCount = 0.0;
+	double physicsCount = 0.0;
 
 	bool running = true;
 	while (running)
 	{
 		auto currentTime = std::chrono::system_clock::now();
 		double deltaTime = static_cast<double>((std::chrono::duration_cast<std::chrono::microseconds>(currentTime - oldTime)).count()) / 1e+6;
+		if (deltaTime == 0.0) continue;
 		if ( deltaTime > 0.1 ) deltaTime = 0.1;
 		oldTime = currentTime;
 
-		moonPhysics.position_ = moon.position;
-		moonPhysics.Update((float)deltaTime);
-		moon.position += moonPhysics.velocity_ * (float)deltaTime;
-		
-		for (Orb* orb : orbs)
-		{
-			orb->Update((float)deltaTime, sphereColliders);
+		physicsCount += deltaTime;
+		if (physicsCount >= physicsTime) {
+			moonPhysics.position_ = moon.Position();
+			moonCol.SetCentre(moon.Position());
+			moonPhysics.Update(physicsTime / 100.0);
+			moon.SetPosition(moon.Position() + moonPhysics.velocity_ * ((float)physicsTime / 100.0f));
+			int temp = std::floor(physicsCount / physicsTime);
+			physicsCount -= (temp * physicsTime);
+
+			for (SphereObject* orb : orbs)
+			{
+				orb->PhysicsUpdate(physicsTime / 100.0);
+			}
+		}
+
+		deltaCount += deltaTime;
+		frameCount++;
+		if (deltaCount >= 1.0) {
+			std::cout << "\r" << frameCount;;
+			deltaCount -= 1.0;
+			frameCount = 0;
+		}
+
+
+		renderCount += deltaTime;
+		if (renderCount >= renderTime) {
+			renderer.Update();
+			int temp = std::floor(renderCount / renderTime);
+			renderCount -= (temp * renderTime);
 		}
 
 		running = window.Update();
-		renderer.Update();
 	}
 
-	renderer.DestroyMesh(mesh);
 
 	for ( int i = 0; i < num; i++ )
 	{
-		renderer.DestroyMesh(orbs[i]->mesh);
 		delete orbs[i];
 	}
-	renderer.DestroyMesh(moon);
 
 	return 0;
 }

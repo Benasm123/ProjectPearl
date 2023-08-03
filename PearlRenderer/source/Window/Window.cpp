@@ -46,3 +46,11 @@ std::vector<const char*> Window::GetRequiredVulkanExtensions() const
 	SDL_Vulkan_GetInstanceExtensions(sdlWindow_, &numberOfExtensionsRequiredBySDL, sdlExtensions.data());
 	return sdlExtensions;
 }
+
+glm::uvec2 PEARL_NAMESPACE::Window::GetSize() const
+{
+	int width = 0;
+	int height = 0;
+	SDL_GetWindowSize(sdlWindow_, &width, &height);
+	return glm::uvec2(width, height);
+}

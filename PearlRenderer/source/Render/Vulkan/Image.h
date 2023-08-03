@@ -12,17 +12,18 @@ namespace PEARL_NAMESPACE
 		Image(const GraphicsUnit& graphicsUnit, vk::Format format, vk::Extent2D size, vk::ImageLayout initialLayout, vk::ImageUsageFlags usage, bool destroy=true);
 		~Image();
 
-		[[nodiscard]] vk::Image Get() const { return image_; }
-		[[nodiscard]] vk::Format Format() const { return format_; }
-		[[nodiscard]] vk::Extent2D Size() const { return size_; }
+		glm::vec2 Size() const { return { size_.width, size_.height }; }
+
 	private:
 		const GraphicsUnit& graphicsUnit_;
 
-		vk::Image image_;
-		vk::Format format_;
-		vk::Extent2D size_;
+		class vk::Image image_;
+		enum vk::Format format_;
+		struct vk::Extent2D size_;
 
 		bool destroy_;
+
+		friend class FrameBuffer;
 	};
 }
 

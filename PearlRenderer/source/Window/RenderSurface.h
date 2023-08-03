@@ -11,11 +11,19 @@ namespace PEARL_NAMESPACE
 		RenderSurface(const RendererInstance& instance, const Window& window);
 		~RenderSurface();
 
-		[[nodiscard]] const vk::SurfaceKHR& Get() const { return surface_; }
+		void Resize();
 
 	private:
 		const vk::Instance& instance_;
+		const Window& owningWindow_;
 		vk::SurfaceKHR surface_{};
+
+		vk::Rect2D scissor_{};
+		vk::Viewport viewport_{};
+
+		friend class CommandBuffer;
+		friend class GraphicsUnit;
+		friend class Swapchain;
 	};
 }
 

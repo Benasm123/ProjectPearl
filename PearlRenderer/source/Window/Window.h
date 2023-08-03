@@ -16,6 +16,7 @@ namespace PEARL_NAMESPACE
 		bool Update();
 
 		[[nodiscard]] std::vector<const char*> GetRequiredVulkanExtensions() const;
+		[[nodiscard]] glm::uvec2 GetSize() const;
 		[[nodiscard]] SDL_Window* Get() const { return sdlWindow_; }
 
 	private:

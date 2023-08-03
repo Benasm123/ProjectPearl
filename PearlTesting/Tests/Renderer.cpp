@@ -9,7 +9,7 @@ TEST(Renderer, Creation) {
 	{
 		const Window window{"Test", 1000, 1000};
 
-		VulkanRenderer2D renderer{window};
+		VulkanRenderer renderer{window};
 
 		std::vector<pearl::typesRender::Mesh*> meshes;
 
@@ -34,7 +34,7 @@ TEST(Renderer, Creation) {
 
 	const Window window{ "Test", 1000, 1000 };
 
-	VulkanRenderer2D renderer{ window };
+	VulkanRenderer renderer{ window };
 
 	pearl::typesRender::Mesh mesh;
 	mesh.data = utils::GetSpherePoints(1, 1);

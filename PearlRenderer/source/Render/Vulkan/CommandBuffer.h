@@ -2,34 +2,45 @@
 #include "PearlCore.h"
 
 struct vk::Rect2D;
+class StaticMesh;
 
 namespace PEARL_NAMESPACE
 {
 	class RenderPass;
 	class FrameBuffer;
 	class GraphicsPipeline;
+	class PipelineLayout;
+	class DescriptorSets;
+	class RenderSurface;
+	class CommandPool;
 
 	class CommandBuffer
 	{
 	public:
-		CommandBuffer(vk::CommandBuffer commandBuffer);
+		CommandBuffer(const CommandPool& commandPool);
 		~CommandBuffer() = default;
 
 		void Begin() const;
 		void End() const;
+		void Reset() const;
 
-		void BeginRenderPass(const RenderPass& renderPass, const FrameBuffer& framebuffer, vk::Rect2D renderArea) const;
+		void BeginRenderPass(const RenderPass& renderPass, const FrameBuffer& framebuffer, const RenderSurface& renderSurface) const;
 		void EndRenderPass() const;
 
 		void BindPipeline(const GraphicsPipeline& pipeline);
 
-		void SetScissor(const vk::Rect2D& scissor);
-		void SetViewport(const vk::Viewport& viewport);
+		void SetRenderSurface(const RenderSurface& renderSurface);
 
-		[[nodiscard]] const vk::CommandBuffer& Get() const { return commandBuffer_; }
+		void BindDescriptorSets(bdvk::PipelineBindPoint bindPoint, const PipelineLayout& pipelineLayout, const DescriptorSets& descriptorSet);
+
+		void PushConstants(const PipelineLayout& pipelineLayout, const pearl::typesRender::PushConstantInfo& pushConstantInfo);
+
+		void DrawIndexed(const StaticMesh& mesh);
 
 	private:
-		vk::CommandBuffer commandBuffer_;
+		class vk::CommandBuffer commandBuffer_;
+
+		friend class Queue;
 	};
 }
 

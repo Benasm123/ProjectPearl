@@ -1,4 +1,5 @@
 #include "Image.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -29,7 +30,7 @@ Image::Image(const GraphicsUnit& graphicsUnit, const vk::Format format, const vk
 		.setUsage(usage)
 		.setSamples(vk::SampleCountFlagBits::e8);
 
-	image_ = graphicsUnit_.GetLogical().createImage(imageInfo);
+	image_ = graphicsUnit_.logicalUnit_.createImage(imageInfo);
 }
 
 
@@ -37,6 +38,6 @@ Image::~Image()
 {
 	if (destroy_)
 	{
-		graphicsUnit_.GetLogical().destroyImage(image_);
+		graphicsUnit_.logicalUnit_.destroyImage(image_);
 	}
 }

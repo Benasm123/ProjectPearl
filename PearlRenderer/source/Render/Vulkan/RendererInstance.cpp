@@ -1,4 +1,5 @@
 #include "RendererInstance.h"
+#include "BDVK/BDVK_internal.h"
 
 using namespace PEARL_NAMESPACE;
 
@@ -63,7 +64,8 @@ RendererInstance::~RendererInstance()
 }
 
 
-vk::PhysicalDevice RendererInstance::FindBestGraphicsUnit(std::vector<const char*> additionalExtensions)
+// TODO -> This additional extensions doesnt actually add extensions right now. Otherwise i can make const.
+vk::PhysicalDevice RendererInstance::FindBestGraphicsUnit(std::vector<const char*> additionalExtensions) const
 {
 	const std::vector<vk::PhysicalDevice> devices = instance_.enumeratePhysicalDevices();
 
@@ -80,8 +82,6 @@ vk::PhysicalDevice RendererInstance::FindBestGraphicsUnit(std::vector<const char
 		if ( !utils::ValidateLayersAndExtensions(requiredInstanceLayers_, requiredDeviceExtensions_, device) ) continue;
 
 		if ( !utils::ValidateLayersAndExtensions(requiredInstanceLayers_, additionalExtensions, device) ) continue;
-
-		requiredDeviceExtensions_.insert(requiredDeviceExtensions_.end(), additionalExtensions.begin(), additionalExtensions.end());
 
 		if ( !bestGPU )
 		{
