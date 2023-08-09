@@ -22,7 +22,7 @@ private:
 	glm::mat4 perspectiveMatrix_{};
 	glm::mat4 viewMatrix_{};
 
-	glm::vec3 position_{0, 0, -3000};
+	glm::vec3 position_{0, 0, 0};
 	glm::vec3 rotation_{0, 0, 1};
 
 	glm::vec2 viewArea_{};

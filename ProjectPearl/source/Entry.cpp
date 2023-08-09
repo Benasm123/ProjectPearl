@@ -31,46 +31,10 @@ int main(int argc, char* argv[])
 	auto renderer = VulkanRenderer(window);
 
 	// PLANET
-	StaticMesh mesh{renderer, utils::GetSpherePoints(70.0f, 5)};
+	SphereObject planet{ renderer, 10000.0f, 5 };
+	planet.Transform().position = { 0.0f, -10001.0f, 0.0f };
 
-	PhysicsObject phys{};
-	GravitationalPull pull{ phys };
-	phys.mass_ = 6.0e11f;
-	pull.SetCentre(mesh.Position());
-	pull.SetIsGlobal(false);
-	
-	std::vector<SphereCollider*> sphereColliders{};
-
-	SphereCollider planet{ 70, mesh.Position()};
-	sphereColliders.push_back(&planet);
-
-	StaticMesh moon{renderer, utils::GetSpherePoints(7.0f, 1) };
-	moon.SetPosition({ 1100.0f, 0.0f, 0.0f });
-	PhysicsObject moonPhysics{};
-	moonPhysics.mass_ = 6.0e8f;
-	moonPhysics.velocity_.y = 2000;
-
-	SphereCollider moonCol{ 7.0f, moon.Position()};
-	sphereColliders.push_back(&moonCol);
-
-	
-	std::vector<SphereObject*> orbs;
-	for (int i = 0; i < num; i++)
-	{
-		auto orb = new SphereObject(renderer, 5.0f, 2);
-		orb->Transform().position = { 1000, 0 + (i * 100), 0};
-		orb->Physics().velocity_ = { 0, 100000, 0 };
-		orbs.push_back(orb);
-	}
-
-	moonPhysics.pulls.push_back(&orbs[0]->Gravity());
-	moonPhysics.pulls.push_back(&pull);
-
-	for (int i = 0; i< num; i++)
-	{
-		orbs[i]->Physics().pulls.push_back(&pull);
-	}
-
+	// TODO -> Make a clock class to manage time.
 	auto oldTime = std::chrono::system_clock::now();
 
 	uint32_t frameCount = 0;
@@ -89,10 +53,8 @@ int main(int argc, char* argv[])
 
 		physicsCount += deltaTime;
 		if (physicsCount >= physicsTime) {
-			moonPhysics.position_ = moon.Position();
-			moonCol.SetCentre(moon.Position());
-			moonPhysics.Update(physicsTime / 100.0);
-			moon.SetPosition(moon.Position() + moonPhysics.velocity_ * ((float)physicsTime / 100.0f));
+			planet.PhysicsUpdate(physicsTime);
+
 			int temp = std::floor(physicsCount / physicsTime);
 			physicsCount -= (temp * physicsTime);
 

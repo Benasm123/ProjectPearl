@@ -9,10 +9,6 @@ layout( push_constant ) uniform constants
 	mat4 mvp;
 } PushConstants;
 
-layout (binding = 0) uniform mvp {
-	mat4 mvp;
-} ubo;
-
 layout (location = 3) out vec4 colour;
 
 void main(void) 
