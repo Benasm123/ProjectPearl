@@ -15,12 +15,18 @@ namespace PEARL_NAMESPACE
 
 		bool Update();
 
+		void AddEventCallback(std::function<void(SDL_Event)>* callback);
+
+		[[nodiscard]] bool IsMinimised() const { return (SDL_GetWindowFlags(sdl_window_) & SDL_WINDOW_MINIMIZED) == SDL_WINDOW_MINIMIZED; }
+
 		[[nodiscard]] std::vector<const char*> GetRequiredVulkanExtensions() const;
 		[[nodiscard]] glm::uvec2 GetSize() const;
-		[[nodiscard]] SDL_Window* Get() const { return sdlWindow_; }
+		[[nodiscard]] SDL_Window* Get() const { return sdl_window_; }
 
 	private:
-		SDL_Window* sdlWindow_;
+		SDL_Window* sdl_window_;
+
+		std::vector<std::function<void(SDL_Event)>*> event_callbacks_;
 	};
 }
 
