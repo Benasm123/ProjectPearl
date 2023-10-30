@@ -5,16 +5,27 @@
 #include "RenderPass.h"
 
 
+class ShaderDescriptor;
+
 namespace PEARL_NAMESPACE
 {
+	struct GraphicsPipelineInfo
+	{
+		vk::PrimitiveTopology primitive_type;
+		vk::PolygonMode polygon_mode;
+		vk::CullModeFlagBits cull_mode;
+		vk::Bool32 depth_enabled;
+		const std::vector<ShaderDescriptor>& shader_infos;
+	};
+
 	class GraphicsPipeline
 	{
 	public:
-		GraphicsPipeline(const GraphicsUnit& graphicsUnit, const RenderSurface& renderSurface, const RenderPass& renderPass, const PipelineLayout& pipelineLayout);
+		GraphicsPipeline(const GraphicsUnit& graphicsUnit, const RenderSurface& renderSurface, const RenderPass& renderPass, const PipelineLayout& pipelineLayout, const GraphicsPipelineInfo& info);
 		~GraphicsPipeline();
 
 	private:
-		void CreateGraphicsPipeline();
+		void CreateGraphicsPipeline(const GraphicsPipelineInfo& info);
 
 	private:
 		class vk::Pipeline pipeline_;

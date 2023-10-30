@@ -54,7 +54,7 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 	                                             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 	                                             .setInitialLayout(vk::ImageLayout::eUndefined)
 	                                             .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
-	                                             .setSamples(vk::SampleCountFlagBits::e1); // TODO-> SAMPLE COUNT NEEDS TO BE SET SOMEWHERE AND PASSED EVERYWHERE ITS NEEDED TO KEEP THE SAME!
+	                                             .setSamples(vk::SampleCountFlagBits::e1);
 
 	attachmentDescriptions.push_back(colourAttachment);
 
@@ -69,8 +69,6 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 	                                         .setDstSubpass(0);
 
 	dependencies.push_back(dependency);
-
-	std::vector<vk::SubpassDescription> subpassDescriptions;
 
 	constexpr vk::AttachmentReference multiSampleReference = vk::AttachmentReference()
 		.setAttachment(0)
@@ -97,6 +95,8 @@ void RenderPass::CreateRenderPass(const RenderSurface& renderSurface)
 	                                       .setPResolveAttachments(&colourReference)
 	                                       .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
 
+
+	std::vector<vk::SubpassDescription> subpassDescriptions;
 	subpassDescriptions.push_back(subpass);
 
 	const vk::RenderPassCreateInfo renderPassInfo = vk::RenderPassCreateInfo()

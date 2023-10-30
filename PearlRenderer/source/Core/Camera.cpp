@@ -3,8 +3,8 @@
 #include <glm/ext/matrix_transform.hpp>
 
 
-Camera::Camera(const float fov, const glm::vec2 renderArea)
-	:viewArea_{renderArea}
+Camera::Camera(const float fov, const glm::vec2 render_area)
+	:viewArea_{render_area}
 	, fov_{fov}
 {
 	UpdatePerspective();
@@ -26,5 +26,5 @@ void Camera::UpdatePerspective()
 
 void Camera::UpdateView()
 {
-	viewMatrix_ = glm::lookAt(position_, position_ + rotation_, glm::vec3{0, 1, 0});
+	viewMatrix_ = glm::lookAt(position_, position_ + rotation_, glm::vec3{0, 0, -1});
 }

@@ -108,9 +108,10 @@ GraphicsUnit::~GraphicsUnit()
 	logicalUnit_.destroy();
 }
 
-bool PEARL_NAMESPACE::GraphicsUnit::WaitForFences(Fence* fence)
+bool PEARL_NAMESPACE::GraphicsUnit::WaitForFences(const Fence* fence) const
 {
-	vk::Result result = logicalUnit_.waitForFences(fence->_internalFence_, VK_TRUE, 100);
+	// const vk::Result result = logicalUnit_.waitForFences(fence->_internalFence_, VK_TRUE, 0);
+	const vk::Result result = logicalUnit_.getFenceStatus(fence->_internalFence_);
 
 	if (result == vk::Result::eSuccess) {
 		logicalUnit_.resetFences(fence->_internalFence_);

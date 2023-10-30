@@ -11,45 +11,95 @@
 #include <Core/StaticMesh.h>
 #pragma warning(pop)
 
+#include "Render/Vulkan/ShaderDescriptor.h"
+
 
 /**
  * \brief A 2D vulkan renderer allowing rendering to a window.
  * \param window The window to render to.
+ * \param camera The camera to use, or nullptr to create one.
  */
-VulkanRenderer::VulkanRenderer(const pearl::Window& window)
+VulkanRenderer::VulkanRenderer(const pearl::Window& window, Camera* camera)
 	: window_{window}
 	, instance_{window_}
-	, graphicsUnit_{instance_}
-	, renderSurface_{instance_, window_}
-	, renderPass_{graphicsUnit_, renderSurface_}
-	, swapchain_{ graphicsUnit_, renderPass_, renderSurface_ }
-	, graphicsPipelineLayout_{graphicsUnit_}
-	, graphicsPipeline_{graphicsUnit_, renderSurface_, renderPass_, graphicsPipelineLayout_}
-	, commandPool_{graphicsUnit_, graphicsUnit_.GetGraphicsQueueIndex()}
-	, camera_{45.0f, swapchain_.GetSize()}
-	, descriptorSets_{graphicsPipelineLayout_}
+	, graphics_unit_{instance_}
+	, render_surface_{instance_, window_}
+	, render_pass_{graphics_unit_, render_surface_}
+	, swapchain_{ graphics_unit_, render_pass_, render_surface_ }
+	, graphics_pipeline_layout_{graphics_unit_}
+	, descriptor_sets_{graphics_pipeline_layout_}
+	, command_pool_{graphics_unit_, graphics_unit_.GetGraphicsQueueIndex()}
+	, camera_{ camera }
 {
+	if (!camera)
+	{
+		camera_ = new Camera{ 45.0f, swapchain_.GetSize() };
+	}
+
 	for (uint32_t i = 0; i < swapchain_.GetImageCount(); i++) {
-		commandBuffers_.push_back(new pearl::CommandBuffer(commandPool_));
+		command_buffers_.push_back(new pearl::CommandBuffer(command_pool_));
 	}
 
 	SetupRenderArea();
+
+	ShaderInputs vertex_input = {
+		ShaderInputType::UniformBuffer,
+		kVertex,
+		{
+			InputValueType::kVec3Float32,
+			InputValueType::kVec3Float32,
+			InputValueType::kVec2Float32
+		}
+	};
+
+	const ShaderDescriptor default_vertex_shader("Basic.vert.spv", kVertex, { vertex_input });
+	const ShaderDescriptor default_fragment_shader("Basic.frag.spv", kFragment, {});
+	const ShaderDescriptor debug_vertex_shader("Debug.vert.spv", kVertex, { vertex_input });
+
+	const std::vector<ShaderDescriptor> pipeline_shaders = { default_vertex_shader, default_fragment_shader };
+	const std::vector<ShaderDescriptor> debug_pipeline_shaders = { debug_vertex_shader, default_fragment_shader };
+
+	const pearl::GraphicsPipelineInfo default_info = {
+		.primitive_type = vk::PrimitiveTopology::eTriangleList,
+		.polygon_mode = vk::PolygonMode::eFill,
+		.cull_mode = vk::CullModeFlagBits::eBack,
+		.depth_enabled = VK_TRUE,
+		.shader_infos = pipeline_shaders,
+	};
+
+	graphics_pipeline_["Default"] = new pearl::GraphicsPipeline(graphics_unit_, render_surface_, render_pass_, graphics_pipeline_layout_, default_info);
+
+	const pearl::GraphicsPipelineInfo debug_info = {
+		.primitive_type = vk::PrimitiveTopology::eTriangleList,
+		.polygon_mode = vk::PolygonMode::eLine,
+		.cull_mode = vk::CullModeFlagBits::eBack,
+		.depth_enabled = VK_FALSE,
+		.shader_infos = debug_pipeline_shaders,
+	};
+
+	// TODO -> Need to create a GraphicsPipelineInfo struct containing all values that can be modified, with sensible defaults, so only those that need changing need changing. Defaults probably equate to the "Default" renderer.
+	graphics_pipeline_["Debug"] = new pearl::GraphicsPipeline(graphics_unit_, render_surface_, render_pass_, graphics_pipeline_layout_, debug_info);
 }
 
 VulkanRenderer::~VulkanRenderer()
 {
-	graphicsUnit_.WaitIdle();
+	graphics_unit_.WaitIdle();
+
+	for (auto pipeline = graphics_pipeline_.begin() ; pipeline != graphics_pipeline_.end(); ++pipeline)
+	{
+		delete pipeline->second;
+	}
 };
 
 void VulkanRenderer::DrawMesh(StaticMesh& mesh)
 {
 	// TODO -- this should be in a mesh class. should also look into abstracting all vk types out to reduce dependancy.
 	// turn meshes into handle that will then have a look up for all needed renderer types?
-	mesh.vertexResource_ = graphicsUnit_.CreateBufferResource(mesh.data_.points.size() * sizeof(mesh.data_.points[0]), bdvk::BufferType::Vertex);
+	mesh.vertexResource_ = graphics_unit_.CreateBufferResource(mesh.data_.points.size() * sizeof(mesh.data_.points[0]), bdvk::BufferType::Vertex);
 	std::memcpy(mesh.vertexResource_.dataPtr, mesh.data_.points.data(), mesh.data_.points.size() * sizeof(mesh.data_.points[0]));
 
 
-	mesh.indexResource_ = graphicsUnit_.CreateBufferResource(mesh.data_.triangles.size() * sizeof(mesh.data_.triangles[0]), bdvk::BufferType::Index);
+	mesh.indexResource_ = graphics_unit_.CreateBufferResource(mesh.data_.triangles.size() * sizeof(mesh.data_.triangles[0]), bdvk::BufferType::Index);
 	std::memcpy(mesh.indexResource_.dataPtr, mesh.data_.triangles.data(), mesh.data_.triangles.size() * sizeof(mesh.data_.triangles[0]));
 
 	meshes_.push_back(&mesh);
@@ -59,58 +109,70 @@ void VulkanRenderer::DrawMesh(StaticMesh& mesh)
 
 void VulkanRenderer::DestroyMesh(const StaticMesh& mesh)
 {
-	graphicsUnit_.WaitIdle();
+	graphics_unit_.WaitIdle();
 
-	graphicsUnit_.DestroyMesh(mesh);
+	graphics_unit_.DestroyMesh(mesh);
 }
 
 void VulkanRenderer::BuildCommandBufferCommands(const uint32_t index)
 {
-	pearl::CommandBuffer currentBuffer = *commandBuffers_[index];
+	pearl::CommandBuffer current_buffer = *command_buffers_[index];
 
-	currentBuffer.Reset();
+	current_buffer.Reset();
 
-	currentBuffer.Begin();
-	currentBuffer.BeginRenderPass(renderPass_, *swapchain_.GetFramebuffers()[index], renderSurface_);
-
-	currentBuffer.BindPipeline(graphicsPipeline_);
+	current_buffer.Begin();
+	current_buffer.BeginRenderPass(render_pass_, *swapchain_.GetFramebuffers()[index], render_surface_);
 
 	// TODO -> Can add scissor and viewport to renderSurface class and allow commandBuffers to access these with a SetRenderSurface method.
-	currentBuffer.SetRenderSurface(renderSurface_);
+	current_buffer.SetRenderSurface(render_surface_);
 
-	currentBuffer.BindDescriptorSets(bdvk::PipelineBindPoint::Graphics, graphicsPipelineLayout_, descriptorSets_);
+	current_buffer.BindPipeline(*graphics_pipeline_["Default"]);
 
-	for (auto& mesh : meshes_)
+	for (const auto& mesh : meshes_)
 	{
-		currentBuffer.PushConstants(graphicsPipelineLayout_, pearl::typesRender::PushConstantInfo{bdvk::ShaderType::Vertex, mesh->mvp_});
+		// mesh->mvp_ = {glm::mat4(1.0)};
 
-		currentBuffer.DrawIndexed(*mesh);
+		current_buffer.PushConstants(graphics_pipeline_layout_, pearl::typesRender::PushConstantInfo{bdvk::ShaderType::Vertex, mesh->mvp_});
+	
+		current_buffer.DrawIndexed(*mesh);
 	}
 
-	currentBuffer.EndRenderPass();
-	currentBuffer.End();
+	current_buffer.BindPipeline(*graphics_pipeline_["Debug"]);
+
+	for (const auto& mesh : meshes_)
+	{
+		current_buffer.PushConstants(graphics_pipeline_layout_, pearl::typesRender::PushConstantInfo{bdvk::ShaderType::Vertex, mesh->mvp_});
+
+		current_buffer.DrawIndexed(*mesh);
+	}
+
+	current_buffer.EndRenderPass();
+	current_buffer.End();
 }
 
 
 bool VulkanRenderer::Render()
 {
-	// TODO -> Fences needs to be wrapped.
-	bool res = graphicsUnit_.WaitForFences(swapchain_.GetFences()[currentRenderIndex_]);
-	if (!res) return false;
+	if (window_.IsMinimised()) return false;
 
-	const uint32_t nextImageIndex = swapchain_.GetNextImageIndex(currentRenderIndex_);
+	if (!graphics_unit_.WaitForFences(swapchain_.GetFences()[current_render_index_]))
+		return false;
+
+	const uint32_t nextImageIndex = swapchain_.GetNextImageIndex(current_render_index_);
 	if (nextImageIndex == ~0u) return false;
 
-	BuildCommandBufferCommands(currentRenderIndex_);
+	BuildCommandBufferCommands(current_render_index_);
 
 	SubmitGraphicsQueue();
 
-	bool presentSucceded = Present(nextImageIndex);
+	const bool present_succeeded = Present(nextImageIndex);
 
-	currentRenderIndex_ = (currentRenderIndex_ + 1) % swapchain_.GetImageCount();
+	current_render_index_ = (current_render_index_ + 1) % swapchain_.GetImageCount();
 
-	if (!presentSucceded)
+	if (!present_succeeded)
 	{
+		vk::Extent2D size = graphics_unit_.GetSurfaceCapabilities(render_surface_).currentExtent;
+		if (size.width == 0 || size.height == 0) return true;
 		OnResize();
 	}
 
@@ -119,43 +181,42 @@ bool VulkanRenderer::Render()
 
 void VulkanRenderer::SubmitGraphicsQueue() 
 {
-
 	// TODO -> This needs to be moved to a mesh update function once we have a real mesh class and updated in update.
 	for (StaticMesh* mesh : meshes_)
 	{
-		glm::mat4 mvp = camera_.GetPerspective() * camera_.GetView();
+		glm::mat4 mvp = camera_->GetPerspective() * camera_->GetView();
 
 		mesh->modelMatrix_ = glm::translate(glm::mat4(1.0f), mesh->position_);
-
+		//mvp * 
 		mesh->mvp_.mvp = mvp * mesh->modelMatrix_;
 	}
 
-	graphicsUnit_.GetGraphicsQueue().Submit(
+	graphics_unit_.GetGraphicsQueue().Submit(
 		bdvk::PipelineStage::ColourOutput
-		, *commandBuffers_[currentRenderIndex_]
-		, { swapchain_.GetImageAcquiredSemaphores()[currentRenderIndex_] }
-		, { swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_] }
-		, swapchain_.GetFences()[currentRenderIndex_]
+		, *command_buffers_[current_render_index_]
+		, { swapchain_.GetImageAcquiredSemaphores()[current_render_index_] }
+		, { swapchain_.GetDrawCompletedSemaphores()[current_render_index_] }
+		, swapchain_.GetFences()[current_render_index_]
 	);
 }
 
 
 
-bool VulkanRenderer::Present(uint32_t nextImageIndex)
+bool VulkanRenderer::Present(uint32_t next_image_index)
 {
-	return graphicsUnit_.GetGraphicsQueue().Present(
+	return graphics_unit_.GetGraphicsQueue().Present(
 		swapchain_
-		, nextImageIndex
-		, { swapchain_.GetDrawCompletedSemaphores()[currentRenderIndex_] }
+		, next_image_index
+		, { swapchain_.GetDrawCompletedSemaphores()[current_render_index_] }
 	);
 }
 
 
 void VulkanRenderer::OnResize() {
 	swapchain_.Recreate();
-	currentRenderIndex_ = 0;
-	camera_.SetViewArea(swapchain_.GetSize());
-	camera_.UpdatePerspective();
+	current_render_index_ = 0;
+	camera_->SetViewArea(swapchain_.GetSize());
+	camera_->UpdatePerspective();
 
 	SetupRenderArea();
 }
@@ -163,7 +224,7 @@ void VulkanRenderer::OnResize() {
 
 void VulkanRenderer::SetupRenderArea() 
 {
-	renderSurface_.Resize();
+	render_surface_.Resize();
 }
 
 

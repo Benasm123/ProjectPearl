@@ -2,16 +2,17 @@
 
 #include "Render/Types/Types2D.h"
 #include "BDVK/BDVK_internal.h"
+#include "ShaderDescriptor.h"
 
 using namespace PEARL_NAMESPACE;
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsUnit& graphicsUnit, const RenderSurface& renderSurface, const RenderPass& renderPass, const PipelineLayout& pipelineLayout)
+GraphicsPipeline::GraphicsPipeline(const GraphicsUnit& graphicsUnit, const RenderSurface& renderSurface, const RenderPass& renderPass, const PipelineLayout& pipelineLayout, const GraphicsPipelineInfo& info)
 	: graphicsUnit_{graphicsUnit}
 	, renderSurface_{renderSurface}
 	, renderPass_{renderPass}
 	, pipelineLayout_{pipelineLayout}
 {
-	CreateGraphicsPipeline();
+	CreateGraphicsPipeline(info);
 }
 
 
@@ -21,42 +22,58 @@ GraphicsPipeline::~GraphicsPipeline()
 }
 
 
-void GraphicsPipeline::CreateGraphicsPipeline()
+void GraphicsPipeline::CreateGraphicsPipeline(const GraphicsPipelineInfo& info)
 {
 
 #pragma region ShaderLoading
-	auto vertexShaderCode = utils::ReadShaderCode("Basic.vert.spv");
 
-	const vk::ShaderModuleCreateInfo vertexModuleInfo = vk::ShaderModuleCreateInfo()
-	                                                    .setFlags({})
-	                                                    .setCodeSize(vertexShaderCode.size())
-	                                                    .setPCode(reinterpret_cast<uint32_t*>(vertexShaderCode.data()));
+	std::vector<vk::PipelineShaderStageCreateInfo> stages;
+	std::vector<vk::ShaderModule> shader_modules;
 
-	const vk::ShaderModule vertexModule = graphicsUnit_.logicalUnit_.createShaderModule(vertexModuleInfo);
+	for (const ShaderDescriptor& shader_info : info.shader_infos)
+	{
+		std::vector<char> shader_code = utils::ReadShaderCode(shader_info.file_);
 
-	const vk::PipelineShaderStageCreateInfo vertexStageInfo = vk::PipelineShaderStageCreateInfo()
-	                                                          .setFlags({})
-	                                                          .setStage(vk::ShaderStageFlagBits::eVertex)
-	                                                          .setModule(vertexModule)
-	                                                          .setPName("main");
+		vk::ShaderModuleCreateInfo shader_module_info = vk::ShaderModuleCreateInfo()
+			.setCodeSize(shader_code.size())
+			.setPCode(reinterpret_cast<uint32_t*>(shader_code.data()));
 
-	auto fragmentShaderCode = utils::ReadShaderCode("Basic.frag.spv");
+		const vk::ShaderModule module = graphicsUnit_.logicalUnit_.createShaderModule(shader_module_info);
 
-	const vk::ShaderModuleCreateInfo fragmentModuleInfo = vk::ShaderModuleCreateInfo()
-		.setFlags({})
-		.setCodeSize(fragmentShaderCode.size())
-		.setPCode(reinterpret_cast<uint32_t*>(fragmentShaderCode.data()));
+		vk::ShaderStageFlagBits stage;
 
-	const vk::ShaderModule fragmentModule = graphicsUnit_.logicalUnit_.createShaderModule(fragmentModuleInfo);
+		switch (shader_info.stage_)
+		{
+		case kVertex:
+			stage = vk::ShaderStageFlagBits::eVertex;
+			break;
+		case kFragment:
+			stage = vk::ShaderStageFlagBits::eFragment;
+			break;
+		case kCompute:
+			stage = vk::ShaderStageFlagBits::eCompute;
+			break;
+		case kGeometry:
+			stage = vk::ShaderStageFlagBits::eGeometry;
+			break;
+		case kTessellation:
+			stage = vk::ShaderStageFlagBits::eTessellationControl;
+			break;
+		default:
+			LOG_ERROR("Unhandled shader stage case! Pipeline creation can not complete.");
+			assert(true);
+		}
 
-	const vk::PipelineShaderStageCreateInfo fragmentStageInfo = vk::PipelineShaderStageCreateInfo()
-		.setFlags({})
-		.setStage(vk::ShaderStageFlagBits::eFragment)
-		.setModule(fragmentModule)
-		.setPName("main");
+		const vk::PipelineShaderStageCreateInfo shader_stage_info = vk::PipelineShaderStageCreateInfo()
+			.setStage(stage)
+			.setModule(module)
+			.setPName("main");
 
-	const std::vector<vk::PipelineShaderStageCreateInfo> stages = { vertexStageInfo, fragmentStageInfo };
-	std::vector<vk::ShaderModule> shaderModules = { vertexModule, fragmentModule };
+		// Making a copy each time. This can be converted to pointer holding, or handles (module i assume is already one so guess this wouldn't have too much impact).
+		stages.push_back(shader_stage_info);
+		shader_modules.push_back(module);
+	}
+
 #pragma endregion ShaderLoading
 
 #pragma region VertexInputState
@@ -66,7 +83,12 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setStride(sizeof(PEARL_NAMESPACE::typesRender::VertexInput2D))
 		.setInputRate(vk::VertexInputRate::eVertex);
 
-	std::vector<vk::VertexInputBindingDescription> vertexBindings = { vertexBindingInfo };
+	vk::VertexInputBindingDescription vertexBindingInfo2 = vk::VertexInputBindingDescription()
+		.setBinding(1)
+		.setStride(sizeof(glm::vec2))
+		.setInputRate(vk::VertexInputRate::eVertex);
+
+	std::vector<vk::VertexInputBindingDescription> vertexBindings = { vertexBindingInfo, vertexBindingInfo2 };
 
 	vk::VertexInputAttributeDescription vertexPositionInfo = vk::VertexInputAttributeDescription()
 		.setLocation(0)
@@ -82,7 +104,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::VertexInputAttributeDescription vertexTextureInfo = vk::VertexInputAttributeDescription()
 		.setLocation(2)
-		.setBinding(0)
+		.setBinding(1)
 		.setFormat(vk::Format::eR32G32Sfloat)
 		.setOffset(offsetof(PEARL_NAMESPACE::typesRender::VertexInput2D, textureCoordinate));
 
@@ -101,18 +123,18 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
 		.setFlags({})
-		.setTopology(vk::PrimitiveTopology::eTriangleList)
+		.setTopology(info.primitive_type)
 		.setPrimitiveRestartEnable(VK_FALSE);
 
 #pragma endregion VertexInputAssembly
 
-#pragma region TesselationState
+#pragma region TessellationState
 
-	vk::PipelineTessellationStateCreateInfo tessellationInfo = vk::PipelineTessellationStateCreateInfo()
+	vk::PipelineTessellationStateCreateInfo tessellation_info = vk::PipelineTessellationStateCreateInfo()
 		.setFlags({})
 		.setPatchControlPoints(0);
 
-#pragma endregion TesselationState
+#pragma endregion TessellationState
 
 #pragma region ViewportState
 
@@ -147,8 +169,8 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setFlags({})
 		.setDepthClampEnable(VK_FALSE)
 		.setRasterizerDiscardEnable(VK_FALSE)
-		.setPolygonMode(vk::PolygonMode::eFill)
-		.setCullMode(vk::CullModeFlagBits::eBack)
+		.setPolygonMode(info.polygon_mode)
+		.setCullMode(info.cull_mode)
 		.setFrontFace(vk::FrontFace::eCounterClockwise)
 		.setDepthBiasEnable(VK_FALSE)
 		.setDepthBiasConstantFactor(0.0f)
@@ -175,7 +197,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 
 	vk::PipelineDepthStencilStateCreateInfo depthStencilInfo = vk::PipelineDepthStencilStateCreateInfo()
 		.setFlags({})
-		.setDepthTestEnable(VK_TRUE)
+		.setDepthTestEnable(info.depth_enabled)
 		.setDepthWriteEnable(VK_TRUE)
 		.setDepthCompareOp(vk::CompareOp::eLess)
 		.setDepthBoundsTestEnable(VK_FALSE)
@@ -229,7 +251,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 		.setPStages(stages.data())
 		.setPVertexInputState(&vertexInputInfo)
 		.setPInputAssemblyState(&inputAssemblyInfo)
-		.setPTessellationState(&tessellationInfo)
+		.setPTessellationState(&tessellation_info)
 		.setPViewportState(&viewportInfo)
 		.setPRasterizationState(&rasterizationInfo)
 		.setPMultisampleState(&multisampleInfo)
@@ -245,7 +267,7 @@ void GraphicsPipeline::CreateGraphicsPipeline()
 	auto pipelineCache = graphicsUnit_.logicalUnit_.createPipelineCache(pipelineCacheInfo, nullptr);
 	pipeline_ = graphicsUnit_.logicalUnit_.createGraphicsPipeline(pipelineCache, graphicsPipelineInfo).value;
 
-	for (vk::ShaderModule module : shaderModules)
+	for (vk::ShaderModule module : shader_modules)
 	{
 		graphicsUnit_.logicalUnit_.destroyShaderModule(module);
 	}

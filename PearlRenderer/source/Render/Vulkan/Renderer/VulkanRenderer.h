@@ -1,5 +1,7 @@
 
 #pragma once
+#include <map>
+
 #include "Core/Camera.h"
 #include "Render/Vulkan/RendererInstance.h"
 #include "Render/Vulkan/CommandBuffer.h"
@@ -18,7 +20,7 @@ class StaticMesh;
 class VulkanRenderer
 {
 public:
-	VulkanRenderer(const pearl::Window& window);
+	VulkanRenderer(const pearl::Window& window, Camera* camera);
 	~VulkanRenderer();
 
 	void DrawMesh(StaticMesh& mesh);
@@ -31,7 +33,7 @@ private:
 
 	void SubmitGraphicsQueue();
 
-	bool Present(uint32_t nextImageIndex);
+	bool Present(uint32_t next_image_index);
 
 	void OnResize();
 	void SetupRenderArea();
@@ -40,22 +42,22 @@ private:
 	const pearl::Window& window_;
 
 	pearl::RendererInstance instance_;
-	pearl::GraphicsUnit graphicsUnit_;
-	pearl::RenderSurface renderSurface_;
-	pearl::RenderPass renderPass_;
+	pearl::GraphicsUnit graphics_unit_;
+	pearl::RenderSurface render_surface_;
+	pearl::RenderPass render_pass_;
 	pearl::Swapchain swapchain_;
 
-	pearl::PipelineLayout graphicsPipelineLayout_;
-	pearl::GraphicsPipeline graphicsPipeline_;
+	pearl::PipelineLayout graphics_pipeline_layout_;
+	std::unordered_map<std::string, pearl::GraphicsPipeline*> graphics_pipeline_;
 
-	pearl::DescriptorSets descriptorSets_;
+	pearl::DescriptorSets descriptor_sets_;
 
-	pearl::CommandPool commandPool_;
-	std::vector<pearl::CommandBuffer*> commandBuffers_;
+	pearl::CommandPool command_pool_;
+	std::vector<pearl::CommandBuffer*> command_buffers_;
 
-	uint32_t currentRenderIndex_ = 0;
+	uint32_t current_render_index_ = 0;
 
 	std::vector<StaticMesh*> meshes_;
 
-	Camera camera_;
+	Camera* camera_;
 }; 

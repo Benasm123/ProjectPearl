@@ -10,7 +10,6 @@ Swapchain::Swapchain(const GraphicsUnit& graphicsUnit, const RenderPass& renderP
 	, renderPass_{renderPass}
 	, renderSurface_{renderSurface}
 {
-	GetSwapchainSettings();
 	Recreate();
 	CreateSynchronization();
 }
@@ -49,7 +48,7 @@ Swapchain::~Swapchain()
 
 uint32_t Swapchain::GetNextImageIndex(const uint32_t currentIndex) const
 {
-	const auto result = graphicsUnit_.logicalUnit_.acquireNextImageKHR(swapchain_, 100, imageAcquiredSemaphore_[currentIndex]->_internalSemaphore_, VK_NULL_HANDLE);
+	const auto result = graphicsUnit_.logicalUnit_.acquireNextImageKHR(swapchain_, 0, imageAcquiredSemaphore_[currentIndex]->_internalSemaphore_, VK_NULL_HANDLE);
 
 	if (result.result != vk::Result::eSuccess)
 	{
@@ -118,12 +117,12 @@ void Swapchain::GetSwapchainSettings()
 
 	swapchainTransform_ = surfaceCapabilities.currentTransform;
 
-	const auto availablePresentModes = graphicsUnit_.GetSurfacePresentModes(renderSurface_);
+	const auto available_present_modes = graphicsUnit_.GetSurfacePresentModes(renderSurface_);
 
-	swapchainPresentMode_ = availablePresentModes.front();
-	for ( const auto presentMode : availablePresentModes )
+	swapchainPresentMode_ = available_present_modes.front();
+	for ( const auto present_mode : available_present_modes )
 	{
-		if ( presentMode == vk::PresentModeKHR::eMailbox ) swapchainPresentMode_ = presentMode;
+		if ( present_mode == vk::PresentModeKHR::eMailbox ) swapchainPresentMode_ = present_mode;
 	}
 }
 

@@ -11,6 +11,8 @@ RendererInstance::RendererInstance(const Window& window, const std::vector<const
 		requiredInstanceLayers_.push_back("VK_LAYER_KHRONOS_validation");
 		requiredInstanceLayers_.push_back("VK_LAYER_LUNARG_monitor");
 	}
+#ifdef THIS
+#endif
 
 	const std::vector<const char*> requiredWindowExtensions = window_.GetRequiredVulkanExtensions();
 

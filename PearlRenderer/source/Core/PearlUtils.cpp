@@ -111,6 +111,229 @@ pearl::typesRender::MeshData utils::GetPlanePoints(float size)
 	return pearl::typesRender::MeshData{points, triangles};
 }
 
+pearl::typesRender::MeshData utils::GetGridPlanePoints(float size, int grid_points)
+{
+	std::vector <pearl::typesRender::VertexInput2D> points{};
+	std::vector<pearl::typesRender::Triangle> triangles{};
+
+	int vertex_index = 0;
+
+	for (uint32_t y = 0; y < grid_points; y++)
+	{
+		for (uint32_t x = 0; x < grid_points; x++)
+		{
+
+			std::vector<glm::vec3> current_face = {
+				glm::vec3(0 + x, 0, 0 + y),
+				glm::vec3(1 + x, 0, 0 + y),
+				glm::vec3(1 + x, 0, 1 + y),
+				glm::vec3(0 + x, 0, 1 + y)
+			};
+
+			points.push_back({ current_face[0], {0, 1, 1} });
+			points.push_back({current_face[1], {0, 1, 1} });
+			points.push_back({current_face[2], {0, 1, 1} });
+			points.push_back({current_face[3], {0, 1, 1} });
+
+			triangles.push_back(pearl::typesRender::Triangle{ 0u + vertex_index, 2u + vertex_index, 1u + vertex_index });
+			triangles.push_back(pearl::typesRender::Triangle{ 0u + vertex_index, 3u + vertex_index, 2u + vertex_index });
+
+			vertex_index += 4;
+		}
+	}
+
+	return pearl::typesRender::MeshData{ points, triangles };
+}
+
+
+pearl::typesRender::MeshData utils::GetGridPlanePointsBD(float size, int grid_points)
+{
+	std::vector <pearl::typesRender::VertexInput2D> points{};
+	std::vector<pearl::typesRender::Triangle> triangles{};
+
+
+	for (uint32_t y = 0; y < grid_points; y++)
+	{
+		for (uint32_t x = 0; x < grid_points; x++)
+		{
+			const float random = (std::rand() % 100) / 50.0f;
+			points.emplace_back(glm::vec3{ x, random, y }, glm::normalize(glm::vec3{ x, random, y }), glm::vec3{});
+		}
+	}
+
+	for (uint32_t y = 0; y < grid_points - 1; y++)
+	{
+		for (uint32_t x = 0; x < grid_points - 1; x++)
+		{
+			triangles.push_back(pearl::typesRender::Triangle{ x + (grid_points * y), (x + 1) + (grid_points * (y + 1)), (x + 1) + (grid_points * y) });
+			triangles.push_back(pearl::typesRender::Triangle{ x + (grid_points * y), (x) + (grid_points * (y + 1)), (x + 1) + (grid_points * (y + 1)) });
+		}
+	}
+
+	return pearl::typesRender::MeshData{ points, triangles };
+}
+
+
+pearl::typesRender::MeshData utils::GetGridReduced(pearl::typesRender::MeshData original, int grid_points, int reduce_amount)
+{
+	std::vector <pearl::typesRender::VertexInput2D> points{};
+	std::vector<pearl::typesRender::Triangle> triangles{};
+
+	int vertex_index = 0;
+
+	// points on grid x, y == x + (y * grid_points)
+	std::vector<int> removed_points;
+	int reduce = 0;
+	for (uint32_t y = 0; y < grid_points; y++)
+	{
+		for (uint32_t x = 0; x < grid_points; x++)
+		{
+			const int index = x + (y * grid_points);
+			if (x == 0 or x == (grid_points - 1) or y == 0 or y == (grid_points-1))
+			{
+				points.push_back(original.points[index]);
+				continue;
+			}
+			if (reduce == 0)
+			{
+				removed_points.push_back(index);
+			}
+			else
+			{
+				points.push_back(original.points[index]);
+			}
+			reduce++;
+			reduce %= reduce_amount;
+		}
+	}
+
+	std::vector<uint32_t> connected;
+
+	int removed_passed = 0;
+	int removed_above = 0;
+	int removed_below = 0;
+	for (uint32_t y = 0; y < grid_points; y++)
+	{
+		for (uint32_t x = 0; x < grid_points; x++)
+		{
+			int index = x + (y * grid_points);
+			const bool removed = std::ranges::find(removed_points, index) != removed_points.end();
+
+			const uint32_t left = index - 1 - removed_passed;
+			const uint32_t right = index - removed_passed;
+			const uint32_t top = index - (grid_points) - (removed_above);
+			const uint32_t bottom = index + (grid_points) - (removed_below);
+
+			if (removed)
+			{
+				triangles.push_back({ top, left, right });
+				triangles.push_back({ left, bottom, right });
+
+				connected.push_back(index - 1);
+				connected.push_back(index + 1);
+				connected.push_back(index - grid_points);
+				connected.push_back(index + grid_points);
+
+				removed_passed++;
+			}
+
+			if (index - (grid_points) >= 0)
+			{
+				if (const bool top_removed = std::ranges::find(removed_points, index - (grid_points)) != removed_points.end()) removed_above++;
+			}
+
+			if (index + (grid_points)  < original.points.size())
+			{
+				if (const bool bottom_removed = std::ranges::find(removed_points, index + (grid_points)) != removed_points.end()) removed_below++;
+			}
+		}
+	}
+
+	removed_passed = 0;
+	removed_above = 0;
+	removed_below = 0;
+	for (int y = 0; y < grid_points; y++)
+	{
+		for (int x = 0; x < grid_points; x++)
+		{
+			int index = x + (y * grid_points);
+
+			const bool removed = std::ranges::find(removed_points, index) != removed_points.end();
+
+			// if Can FIND index then skip to next
+			if (std::ranges::find(connected, index) != connected.end() or removed)
+			{
+				if (removed)
+				{
+					removed_passed++;
+				}
+
+				if (index - (grid_points) >= 0)
+				{
+					if (const bool top_removed = std::ranges::find(removed_points, index - (grid_points)) != removed_points.end()) removed_above++;
+				}
+
+				if (index + (grid_points) < original.points.size())
+				{
+					if (const bool bottom_removed = std::ranges::find(removed_points, index + (grid_points)) != removed_points.end()) removed_below++;
+				}
+
+				continue;
+			}
+
+			const uint32_t left = index - 1 - removed_passed;
+			const uint32_t right = index + 1 - removed_passed;
+			const uint32_t top = index - (grid_points) - (removed_above);
+			const uint32_t bottom = index + (grid_points) - (removed_below);
+
+			if (((y-1) >= 0) and ((x-1) >= 0))
+			{
+				triangles.push_back({ (uint32_t)(index - removed_passed), (uint32_t)top, (uint32_t)left });
+			}
+
+			if (((x-1) >= 0) and ((y+1) < grid_points))
+			{
+				triangles.push_back({ (uint32_t)(index - removed_passed), (uint32_t)left, (uint32_t)bottom });
+			}
+
+			if (((y+1) < grid_points) and ((x+1) < grid_points))
+			{
+				triangles.push_back({ (uint32_t)(index - removed_passed), (uint32_t)bottom, (uint32_t)right });
+			}
+
+			if (((x+1) < grid_points) and ((y-1) >= 0))
+			{
+				triangles.push_back({ (uint32_t)(index - removed_passed), (uint32_t)right, (uint32_t)top });
+			}
+
+			// Create A method that checks if the point is in the removed points list
+
+			//FFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+			if (removed)
+			{
+				removed_passed++;
+			}
+
+			if (index - (grid_points) >= 0)
+			{
+				if (const bool top_removed = std::ranges::find(removed_points, index - (grid_points)) != removed_points.end()) removed_above++;
+			}
+
+			if (index + (grid_points) < original.points.size())
+			{
+				if (const bool bottom_removed = std::ranges::find(removed_points, index + (grid_points)) != removed_points.end()) removed_below++;
+			}
+		}
+	}
+
+	LOG_INFO("POINTS :::: {}", points.size());
+	LOG_INFO("TRIANGLES :::: {}", triangles.size());
+
+	return pearl::typesRender::MeshData{ points, triangles };
+}
+
+// Write a function that prints hello world.
 
 pearl::typesRender::MeshData utils::GetSpherePoints(float radius, const uint32_t precision)
 {

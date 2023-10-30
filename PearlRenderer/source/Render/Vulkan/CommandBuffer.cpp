@@ -50,7 +50,6 @@ void PEARL_NAMESPACE::CommandBuffer::BeginRenderPass(const RenderPass& renderPas
 		vk::ClearColorValue{std::array<float, 4>({{0.2f, 0.2f, 0.2f, 0.2f}})}
 	};
 
-	// TODO -> Convert .Get() methods to just private access through friends, to remove this access to vulkan.
 	commandBuffer_.beginRenderPass(
 		vk::RenderPassBeginInfo()
 		.setRenderPass(renderPass.renderPass_)
@@ -89,8 +88,9 @@ void PEARL_NAMESPACE::CommandBuffer::PushConstants(const PipelineLayout& pipelin
 
 void PEARL_NAMESPACE::CommandBuffer::DrawIndexed(const StaticMesh& mesh)
 {
-	constexpr vk::DeviceSize offset[] = { 0 };
-	commandBuffer_.bindVertexBuffers(0, 1, &mesh.vertexResource_.buffer, offset);
+	constexpr vk::DeviceSize offset[] = { 0, 0 };
+	std::vector<vk::Buffer> bufs = { mesh.vertexResource_.buffer, mesh.vertexResource_.buffer };
+	commandBuffer_.bindVertexBuffers(0, 2, bufs.data(), offset);
 
 	commandBuffer_.bindIndexBuffer(mesh.indexResource_.buffer, 0, vk::IndexType::eUint32);
 

@@ -19,7 +19,7 @@ namespace PEARL_NAMESPACE
 		GraphicsUnit(const RendererInstance& instance);
 		~GraphicsUnit();
 
-		bool WaitForFences(Fence* fences);
+		bool WaitForFences(const Fence* fence) const;
 
 		void WaitIdle();
 
@@ -31,10 +31,10 @@ namespace PEARL_NAMESPACE
 		[[nodiscard]] PEARL_NAMESPACE::typesRender::BufferResource CreateBufferResource(size_t size, bdvk::BufferType usage);
 
 		void DestroyMesh(const StaticMesh& mesh);
+		[[nodiscard]] struct vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(const RenderSurface& surface) const;
 
 	private:
 		[[nodiscard]] struct vk::PhysicalDeviceLimits GetLimits() const;
-		[[nodiscard]] struct vk::SurfaceCapabilitiesKHR GetSurfaceCapabilities(const RenderSurface& surface) const;
 		std::vector<struct vk::SurfaceFormatKHR> GetSurfaceFormats(const RenderSurface& surface) const;
 		struct vk::SurfaceFormatKHR GetBestSurfaceFormat(const RenderSurface& surface) const;
 		std::vector<enum vk::PresentModeKHR> GetSurfacePresentModes(const RenderSurface& surface) const;

@@ -30,28 +30,30 @@ PipelineLayout::~PipelineLayout()
 
 void PipelineLayout::CreateDescriptorSetLayout()
 {
-	const vk::DescriptorSetLayoutBinding binding = vk::DescriptorSetLayoutBinding()
-	                                               .setBinding(0)
-	                                               .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-	                                               .setDescriptorCount(1)
-	                                               .setPImmutableSamplers(nullptr)
-	                                               .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	// Who knew this did nothing...
+	//
+	// const vk::DescriptorSetLayoutBinding binding = vk::DescriptorSetLayoutBinding()
+	//                                                .setBinding(0)
+	//                                                .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+	//                                                .setDescriptorCount(1)
+	//                                                .setPImmutableSamplers(nullptr)
+	//                                                .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	//
+	// const vk::DescriptorSetLayoutBinding tbinding = vk::DescriptorSetLayoutBinding()
+	// 	.setBinding(1)
+	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+	// 	.setDescriptorCount(1)
+	// 	.setPImmutableSamplers(nullptr)
+	// 	.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	//
+	// const vk::DescriptorSetLayoutBinding nbinding = vk::DescriptorSetLayoutBinding()
+	// 	.setBinding(2)
+	// 	.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+	// 	.setDescriptorCount(1)
+	// 	.setPImmutableSamplers(nullptr)
+	// 	.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-	const vk::DescriptorSetLayoutBinding tbinding = vk::DescriptorSetLayoutBinding()
-		.setBinding(1)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1)
-		.setPImmutableSamplers(nullptr)
-		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-	const vk::DescriptorSetLayoutBinding nbinding = vk::DescriptorSetLayoutBinding()
-		.setBinding(2)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1)
-		.setPImmutableSamplers(nullptr)
-		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {binding, tbinding, nbinding};
+	const std::vector<vk::DescriptorSetLayoutBinding> bindings = {};
 
 	const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = vk::DescriptorSetLayoutCreateInfo()
 		.setFlags({})
